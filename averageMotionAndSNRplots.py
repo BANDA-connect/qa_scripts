@@ -169,8 +169,6 @@ def plotWithinScanMotion():
 	tipo="within" #within" #"between"
 	labels=["FD","Rotation","Translation", "FramewiseThreashold"]
 	with open('/space/erebus/1/users/data/scores/motion_'+tipo+'_scan_FD_output_140.csv', 'r') as csvfile:
-	#with open('/space/erebus/1/users/data/scores/new/motion_'+tipo+'_scan_output_subj1,140.csv', 'r') as csvfile:
-	#with open('//autofs/space/erebus_001/users/data/scores/new/motion_within_scan_output_081918.csv', 'r') as csvfile:
 		spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 		next(spamreader)
 		for row in spamreader:
@@ -180,11 +178,6 @@ def plotWithinScanMotion():
 					if labels[i] in row[1]:
 						ind =i
 
-				#if "Rotation" in row[1]:
-				#	ind=0
-				#else:
-				#	ind=1
-
 
 				if "T" not in row[2]:
 					scan=row[2][:-1]
@@ -193,8 +186,6 @@ def plotWithinScanMotion():
 
 
 				val=float(row[3])
-				#except:
-				#	val=0
 				if val>0:
 					if not scan in perScan[ind]:
 						perScan[ind][scan]=[[],[],[]]
@@ -206,24 +197,17 @@ def plotWithinScanMotion():
 					elif s in dep_subjects:
 						perScan[ind][scan][2].append(val)
 
-			#except:
-			#	print(row)
-
 	sets={5:["T1","T2","Diffusion","T1 all vnavs - no reacq", "T2 all vnavs - no reacq"],4:["Rest","Gambling","FaceMatching","Conflict"]}
 
 	plotted=0
 	for sizeFig, scansInFigure  in sets.items():
-		#f, axarr = plt.subplots(2, sizeFig,figsize=(5*sizeFig,6))
-		#f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.30)
 		for i, l in enumerate(labels):
 			for scanName in scansInFigure:
 				f = plt.figure(plotted, figsize=(5,5))
 				plt.title(namesPerScan[scanName])
 				values = perScan[i][scanName]
 				print (scanName)
-				#axarr[i][plotted].set_title(namesPerScan[scanName])
 				for q in range(len(values)):
-					#violin_parts = axarr[i][plotted].violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
 					violin_parts = plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
 					for pc in violin_parts['bodies']:
 						pc.set_facecolor(colors[q])
@@ -235,10 +219,6 @@ def plotWithinScanMotion():
 						vp = violin_parts[partname]
 						vp.set_edgecolor(colors[q])
 						vp.set_linewidth(1)
-				#axarr[i][plotted].set_ylim((-0.1,1))
-				#axarr[i][plotted].set_ylabel(labels[i])
-				#axarr[i][plotted].set_xticks([0,1,2],["CA","AA","DA"])
-				#axarr[i][plotted].tight_layout()			
 				plt.xticks([0,1,2],["CA","AA","DA"])
 				plt.ylim(0,.7)
 				f.tight_layout()
@@ -246,29 +226,14 @@ def plotWithinScanMotion():
 				
 				
 				plotted+=1
-			#for ax in axarr.flatten():
-			#	ax.set_xticks([0,1,2])
-			#	ax.set_xticklabels(["CA","AA","DA"])
-		
-		#handles, labels2 = f.gca().get_legend_handles_labels()
-		#by_label = OrderedDict(zip(labels2, handles))
-		#f.legend(by_label.values(), by_label.keys())
-		#f.legend(frameon=False)
-		#f.tight_layout()
-		#figName=""
-		#for a in scansInFigure:
-		#	figName+="_"+namesPerScan[a]
-		#f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/within_cat_{figName}.png")
-	
 	
 
 def plotBetweenScanMotion():
-	titles=["Diffusion","Rest","T1-T2","Gambling","FaceMatching","Conflict"]
 
 	perScan=[dict(),dict(), dict(), dict()]
 	tipo="between"
-	labels=["FD","Rotation","Translation", "FramewiseThreashold"]
-	with open('/space/erebus/1/users/data/scores/new/motion_'+tipo+'_scan_FD_output_subj140.csv', 'r') as csvfile:
+	labels=["FD","Rotation","Translation"] #, "FramewiseThreashold"]
+	with open('/space/erebus/1/users/data/scores/motion_'+tipo+'_scan_FD_output_140.csv', 'r') as csvfile:
 		spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 		next(spamreader)
 		for row in spamreader:
@@ -285,8 +250,6 @@ def plotBetweenScanMotion():
 				print(scan)
 
 				val=float(row[3])
-				#except:
-				#	val=0
 				if val>0:
 					if not scan in perScan[ind]:
 						perScan[ind][scan]=[[],[],[]]
@@ -302,19 +265,17 @@ def plotBetweenScanMotion():
 				print(row)
 	sets={2:["T1_T2","DiffusionDiffusion"],4:["RestRest","GamblingGambling","FaceMatchingFaceMatching","ConflictConflict"]}
 	
+	plotted=0
 	for sizeFig, scansInFigure  in sets.items():
-
-		#f, axarr = plt.subplots(2, sizeFig,figsize=(5*sizeFig,6))
-		#f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.30)
-
-		for i in range(2):
-			plotted=0
+		for i,l in enumerate(labels):
 			for scanName in scansInFigure:
+				f = plt.figure(plotted, figsize=(5,5))
+				plt.title(labels_sets[scanName])
+				print(i)
 				values = perScan[i][scanName]
 				print (scanName)
-				axarr[i][plotted].set_title(labels_sets[scanName])
 				for q in range(len(values)):
-					violin_parts =axarr[i][plotted].violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
+					violin_parts =plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
 					for pc in violin_parts['bodies']:
 						pc.set_facecolor(colors[q])
 						pc.set_edgecolor(colors[q])
@@ -325,20 +286,13 @@ def plotBetweenScanMotion():
 						vp.set_edgecolor(colors[q])
 						vp.set_linewidth(1)
 
-				axarr[i][plotted].set_ylim((-1,25))
-				axarr[i][plotted].set_ylabel(labels[i])
-				axarr[i][plotted].set_xticks([0,1,2],["CA","AA","DA"])
-
+				plt.xticks([0,1,2],["CA","AA","DA"])
+				plt.ylim(0,15)
+				f.tight_layout()
+				f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_cat_{scanName}.png")
+				
+				
 				plotted+=1
-			for ax in axarr.flatten():
-				ax.set_xticks([0,1,2])
-				ax.set_xticklabels(["CA","AA","DA"])
-		f.legend(frameon=False)
-		f.tight_layout()
-		figName=""
-		for a in scansInFigure:
-			figName+="_"+labels_sets[a]
-		f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/between_cat_{figName}.png")
 
 def subjectsHistograms():
 	objects = ('CA', 'AA', 'DA')
@@ -498,23 +452,20 @@ def plotSNRContinuousMeasures():
 				#f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_continuous_{key}{figName}.png")
 
 def plotWithinScanMotionContinuousMeasures():
-	perScan=[dict(),dict()]
+	perScan=[dict(),dict(), dict()]
 	tipo="within" #within" #"between"
-	labelsY=["Rotation","Translation"]
-	#colors=[ 'green','violet','cyan']
-	#labels=['Controls', 'Anxious', 'Depressed']
 
-	with open('/space/erebus/1/users/data/scores/new/motion_'+tipo+'_scan_output_subj1,140.csv', 'r') as csvfile:
-	#with open('//autofs/space/erebus_001/users/data/scores/new/motion_within_scan_output_081918.csv', 'r') as csvfile:
+	labels=["FD","Rotation","Translation"] #, "FramewiseThreashold"]
+	with open('/space/erebus/1/users/data/scores/motion_'+tipo+'_scan_FD_output_140.csv', 'r') as csvfile:
 		spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 		for row in spamreader:
 			try:
 				if "vnav" not in  row[2]:
 					s=row[0]
-					if "Rotation" in row[1]:
-						ind=0
-					else:
-						ind=1
+					for i in range(len(labels)):
+						if labels[i] in row[1]:
+							ind =i
+
 					if "T" not in row[2]:
 						scan=row[2][:-1]
 					else:
@@ -536,54 +487,33 @@ def plotWithinScanMotionContinuousMeasures():
 				print(row)
 
 	subjects, sex, scores = utils.loadBANDAscores(outliers)
-	#sets={3:["T1","T2","Diffusion"],4:["Rest","Gambling","FaceMatching","Conflict"]}
 	sets={3:["T1","T2","Diffusion"],4:["Rest","Gambling","FaceMatching","Conflict"]}
+	plotted=0
 	for sizeFig, scansInFigure  in sets.items():
-
 		for key, score in scores.items():
-
 			if key in ["BIS","BAS","MFQ","SHAPS_CNT"]:
-				f, axarr = plt.subplots(2, sizeFig,figsize=(5*sizeFig,6))
-				#f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.30)
-				f.tight_layout()
-				for i in range(2):
-					#f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.30)
-					plotted=0
-
-					#for scanName, categories in perScan[i].items():
+				for i, l in enumerate(labels):
 					for scanName in scansInFigure:
 						categories = perScan[i][scanName]
 						print (scanName)
-						if scanName in scansInFigure:
-							axarr[i][plotted].set_title(namesPerScan[scanName])
-							#print(categories)
-							for q in range(len(categories)):
-								for snr,sub in categories[q]:
-									if sub in subjects:
-										try:
-											axarr[i][plotted].scatter(score[subjects.index(sub)], snr, color=colors[q], label=labelGroups[q]) #,showmedians=True)
-										except:
-											print(sub)
-							axarr[i][plotted].set_xlabel(key)
-							axarr[i][plotted].set_ylabel(labelsY[i])
+						f = plt.figure(plotted, figsize=(5,5))	
+						plt.title(namesPerScan[scanName])
+						for q in range(len(categories)):
+							for snr,sub in categories[q]:
+								if sub in subjects:
+									try:
+										plt.scatter(score[subjects.index(sub)], snr, color=colors[q], label=labelGroups[q]) #,showmedians=True)
+									except:
+										print(sub)
+						plt.xlabel(key)
+						plt.ylim((0,1))
+						f.tight_layout()
+						if key is "SHAPS_CNT":
+							plt.xlabel("SHAPS > 2 = Anhedonia ")
+							plt.plot( [2.5]*30, np.linspace(0,1,30), '--', color='black')
 
-							axarr[i][plotted].set_ylim(-0.1,1)
-
-							#axarr[plotted].set_xticks([0,1,2,3],["Controls","Anxious","Comorbid","Depressed"])
-							#f.savefig("/space/erebus/1/users/vsiless/QA_plots/snr",dpi=199)
-							if key is "SHAPS_CNT":
-								axarr[i][plotted].set_xlabel("SHAPS > 2 = Anhedonia ")
-								axarr[i][plotted].plot( [2.5]*30, range(0,30), '--', color='black')
-
-							plotted+=1
-				handles, labels = f.gca().get_legend_handles_labels()
-				by_label = OrderedDict(zip(labels, handles))
-				f.legend(by_label.values(), by_label.keys())
-				f.tight_layout()
-				figName=""
-				for a in scansInFigure:
-					figName+="_"+namesPerScan[a]
-				f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_within_continuous_{key}{figName}.png")
+						f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_continuous_{scanName}.png")
+						plotted+=1
 	
 
 def plotBetweenScanMotionContinuousMeasures():
@@ -688,10 +618,10 @@ def plotBetweenScanMotionContinuousMeasures():
 #plotSNRAvg()
 #plotSNRContinuousMeasures()
 
-plotWithinScanMotion()
+#plotWithinScanMotion()
 #plotBetweenScanMotion()
 
-#plotWithinScanMotionContinuousMeasures()
+plotWithinScanMotionContinuousMeasures()
 #plotBetweenScanMotionContinuousMeasures()
 
 plt.show()
