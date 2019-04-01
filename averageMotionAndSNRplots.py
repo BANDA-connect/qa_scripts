@@ -269,8 +269,6 @@ def plotBetweenScanMotion():
 	tipo="between"
 	labels=["FD","Rotation","Translation", "FramewiseThreashold"]
 	with open('/space/erebus/1/users/data/scores/new/motion_'+tipo+'_scan_FD_output_subj140.csv', 'r') as csvfile:
-	#with open('/space/erebus/1/users/data/scores/new/motion_'+tipo+'_scan_output_subj1,140.csv', 'r') as csvfile:
-	#with open('//autofs/space/erebus_001/users/data/scores/new/motion_within_scan_output_081918.csv', 'r') as csvfile:
 		spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 		next(spamreader)
 		for row in spamreader:
