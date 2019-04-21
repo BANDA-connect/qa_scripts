@@ -750,6 +750,7 @@ def loadBANDAscores(outliers=[]):
 	scores['BASD'] = np.array(basDrive)
 	scores['BASF'] = np.array(basFun)
 	scores['BASR'] = np.array(basReward)
+	scores['wasi'] = np.array(wasi)
 	subjects_info=dict()
 	subjects_info['gender']=gender
 	subjects_info['age']=age
