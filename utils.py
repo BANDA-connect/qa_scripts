@@ -133,6 +133,8 @@ def loadBANDA(outliers=[]):
 def getBandaLabels(outliers=[]):
     labelfile = "/autofs/space/erebus_001/users/admin/participant_info/participant_diagnosis_labels_140.csv"
     subjects=[]
+    ages=[]
+    genders=[]
     control=[]
     anxious=[]
     depressed=[]
@@ -145,6 +147,8 @@ def getBandaLabels(outliers=[]):
         for row in reader:
             if len(row['banda_id'])>0 and row['banda_id']not in outliers and row['complete_flag']=='full':
                 subjects.append(row['banda_id'])
+                ages.append(float(row['age_scan']))
+                genders.append(row['gender'])
                 if row['diagnosis_label']=='control':
                     control.append(row['banda_id'])
                 elif row['diagnosis_label']=='anx':
@@ -163,6 +167,8 @@ def getBandaLabels(outliers=[]):
     subjects_lbl['dep']=depressed
     subjects_lbl['partial_scan']=partsubjects
     subjects_lbl['no_scan']=skipsubjects
+    subjects_lbl['allages']=ages
+    subjects_lbl['allgenders']=genders
 
     return subjects, subjects_lbl
 

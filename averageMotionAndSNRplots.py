@@ -38,7 +38,12 @@ labels=['CA', 'AA', 'DA']
 labelGroups=['CA', 'AA', 'DA']
 namesPerScan={"T1":"T1w" ,"T2":"T2w","Diffusion":"dMRI","Rest":"rfMRI", "Gambling":"IPT", "FaceMatching":"EPT","Conflict":"EIT", "T1 all vnavs - no reacq":"T1w (no vNavs)", "T2 all vnavs - no reacq":"T2w (no vNavs)"}
 labels_sets={"T1_T2":"T1w-T2w","DiffusionDiffusion":"dMRI","RestRest":"rfMRI","GamblingGambling":"IPT","FaceMatchingFaceMatching":"EPT","ConflictConflict":"EIT"}
-
+scansCSV=["T1","T2","Diffusion","Rest","Gambling","FaceMatching","Conflict"]
+scansBCSV=["T1_T2","DiffusionDiffusion","RestRest","GamblingGambling","FaceMatchingFaceMatching","ConflictConflict"]
+headerCSV=["","T1w","T2w","dMRI","rfMRI","IPT","EPT","EIT"]
+headerBCSV=["","T1w-T2w","dMRI","rfMRI","IPT","EPT","EIT"]
+scores_CSV= ["MFQ","SHAPS_CNT","BIS","BAS", "STAIS", "STAIT", "RCADSA", "RCADSD","wasi"]
+scores_header_CSV= ["MFQ","SHAPS","BIS","BAS", "STAI-S", "STAI-T", "RCADS-A", "RCADS-D","WASI-II"]
 print(labels, colors)
 
 def plotSNRPerScan():
@@ -84,7 +89,47 @@ def plotSNRPerScan():
 	plt.show()
 
 
+def getFormatedText_ttest(t_test, n, bonferoni):
+	text= 'p=.%s' % format( t_test.pvalue,'.3f')[2:]
+	text+= "\n"
+	if t_test.pvalue*bonferoni >.999:
+		text+='pc>.999'
+	else:
+		text+= 'pc=.%s' % format( t_test.pvalue*bonferoni,'.3f')[2:]
+	
+	text+= "\n"
+	r2=(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 +n -2))[0] 
+	if r2 < .001:
+		text+='rs<.001'
+	else:
+		text+= 'rs=.%s' % format( r2,'.3f')[2:]
+	
+	return text
+def getFormatedText_regression(p_value, r_value, bonferoni):
+	text=""
+	if p_value <0.001:
+		text="p<.001"
+	else:
+		text=r"p=.%s"%format(p_value, ".3f")[2:]
+	text+= "\n"
 
+	if p_value*bonferoni >.999:
+		patch2 = mpatches.Patch(color='none', label=r'$p>.999$')
+		text+=r'pc>.999'
+	else:
+		patch2 = mpatches.Patch(color='none', label=r'$p=.%s$' % format( p_value*7*4,'.3f')[2:])
+		text+=r'pc=.%s' % format( p_value*bonferoni,'.3f')[2:]
+
+	text+= "\n"
+	if r_value **2 >0.001:
+		patch1 = mpatches.Patch(color='none', label=r'$r^2=.%s$' % format( r_value**2,'.3f')[2:])
+		text+=r'rs=.%s' % format( r_value**2,'.3f')[2:]
+	else:
+		patch1 = mpatches.Patch(color='none', label=r'$r^2<.001$')
+		text+=r'rs<.001'
+
+	return patch1, patch2, text
+	
 def plotSNRAvg():
 	snr_perScan=dict()
 	fsquared=[]
@@ -115,82 +160,86 @@ def plotSNRAvg():
 						snr_perScan[scan][2][s].append(snr)
 			except:
 				print(row)
+	scans=["T1","T2","Diffusion","Rest","Gambling","FaceMatching","Conflict"]
+	header=["","T1w","T2w","dMRI","rfMRI","IPT","EPT","EIT"]
+	table=dict()
+	table["CA vs AA"] = ["CA vs AA"] 	
+	table["CA vs DA"] = ["CA vs DA"]  	
+	table["AA vs DA"] = ["AA vs DA"] 
 
-	sets={3:["T1","T2","Diffusion"],4:["Rest","Gambling","FaceMatching","Conflict"]}
 	plotted=0
 	nCA = len(snr_perScan["T1"][0])
 	nAA = len(snr_perScan["T1"][1])
 	nDA = len(snr_perScan["T1"][2])
-	for sizeFig, scansInFigure  in sets.items():
-		for scanName in scansInFigure:
-			f=plt.figure(plotted, figsize=(5,5))
-			categories = snr_perScan[scanName]
-			plt.title(namesPerScan[scanName])
-			values =[[],[],[]]
-			x=[]
-			y=[]
-			for q in range(len(values)):
-				for sub, snr in categories[q].items():
-					if sub in subjects and len(snr)>0:
-						values[q].append(sum(snr)/len(snr))
-						y.append(sum(snr)/len(snr))
-						cats = [0,0,0]
-						cats[q]=1
-						x.append(cats)
-				violin_parts = plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
-				for pc in violin_parts['bodies']:
-					pc.set_facecolor(colors[q])
-					pc.set_edgecolor(colors[q])
-					pc.set_linewidth(1)
-					pc.set_alpha(0.5)
-				for partname in ('cbars','cmins','cmaxes','cmeans'):
-					vp = violin_parts[partname]
-					vp.set_edgecolor(colors[q])
-					vp.set_linewidth(1)
-			min_y = min(y)
-			if  "T2" in scanName:
-				plt.ylim((2,6))
-				min_y= 0.5
-			if not "T" in scanName:
-				plt.ylim((0,30))
-				min_y= 0.5
+	for scanName in scans:
+		f=plt.figure(plotted, figsize=(5,5))
+		categories = snr_perScan[scanName]
+		plt.title(namesPerScan[scanName])
+		values =[[],[],[]]
+		x=[]
+		y=[]
+		for q in range(len(values)):
+			for sub, snr in categories[q].items():
+				if sub in subjects and len(snr)>0:
+					values[q].append(sum(snr)/len(snr))
+					y.append(sum(snr)/len(snr))
+					cats = [0,0,0]
+					cats[q]=1
+					x.append(cats)
+			violin_parts = plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
+			for pc in violin_parts['bodies']:
+				pc.set_facecolor(colors[q])
+				pc.set_edgecolor(colors[q])
+				pc.set_linewidth(1)
+				pc.set_alpha(0.5)
+			for partname in ('cbars','cmins','cmaxes','cmeans'):
+				vp = violin_parts[partname]
+				vp.set_edgecolor(colors[q])
+				vp.set_linewidth(1)
+		min_y = min(y)
+		if  "T2" in scanName:
+			plt.ylim((1,6))
+			min_y= 0.5
+		if not "T" in scanName:
+			plt.ylim((0,30))
+			min_y= 0.5
 
-			plt.xticks([0,1,2],["CA","AA","DA"])
-			plotted+=1
-			
-			#print( np.shape(x), np.shape(y))
-			#x = sm.add_constant(x)
-			est = sm.OLS( y,x)
-			est2 = est.fit()
-			#print("r",est2.summary(), est2.fvalue, est2.f_pvalue)
-			fsquared.append(est2.rsquared/(1-est2.rsquared))
+		plt.xticks([0,1,2],["CA","AA","DA"])
+		plotted+=1
+		
+		est = sm.OLS( y,x)
+		est2 = est.fit()
+		#print("r",est2.summary(), est2.fvalue, est2.f_pvalue)
+		fsquared.append(est2.rsquared/(1-est2.rsquared))
 
-			print(scanName)
-			plt.text(1.1,min_y,'\n'.join((r'$f^2=.%s$' % format( est2.rsquared/(1-est2.rsquared),'.3f')[2:] ,  r'$p=.%s$' % format( est2.f_pvalue, '.3f')[2:]))) #, {'size':'14'})
-			t_test= est2.t_test([1, 0,-1])
-			print("CA vs DA", "r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nDA +nCA -2 )))
-			t_test= est2.t_test([0, 1,-1])
-			print("AA vs DA", "r=%10.3e"%t_test.pvalue,"r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nDA -2 )))
-
-			t_test= est2.t_test([1, -1,0])
-			print("CA vs AA","r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nCA -2 )))
-
-
-			f.tight_layout()
-			f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_cat_{scanName}.png")
-
-
-		if "T1" in scansInFigure:
-			plt.ylabel("SNR")
+		print(scanName)
+		#plt.text(1.1,min_y,'\n'.join((r'$f^2=.%s$' % format( est2.rsquared/(1-est2.rsquared),'.3f')[2:] ,  r'$p=.%s$' % format( est2.f_pvalue, '.3f')[2:]))) #, {'size':'14'})
+		patch1 = mpatches.Patch(color='none', label=r'$f^2=.%s$' % format( est2.rsquared/(1-est2.rsquared),'.3f')[2:])
+		if est2.f_pvalue*7 >.999:
+			patch2 = mpatches.Patch(color='none', label=r'$p>.999$')
 		else:
-			plt.ylabel("tSNR")
+			patch2 = mpatches.Patch(color='none', label=r'$p=.%s$' % format( est2.f_pvalue*7,'.3f')[2:])
+		plt.legend(handles=[patch1, patch2],frameon=False, loc='lower right')
 
-		#plt.xticks([0,1,2],labels)
-		#f.legend(frameon=False)
-		#figName=""
-		#for a in scansInFigure:
-		#	figName+="_"+namesPerScan[a]
-	
+		f.tight_layout()
+		f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_cat_{scanName}.png")
+
+		t_test= est2.t_test([1, 0,-1])
+		table["CA vs DA"].append( getFormatedText_ttest(t_test, nCA+nDA, 3*7))
+
+		t_test= est2.t_test([0, 1,-1])
+		table["AA vs DA"].append( getFormatedText_ttest(t_test, nAA+nDA, 3*7))
+
+		t_test= est2.t_test([1, -1,0])
+		table["CA vs AA"].append( getFormatedText_ttest(t_test, nAA+nCA, 3*7))
+
+
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_cat.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(header)
+		for k, v in table.items():
+			writer.writerow(v)
+		
 	print("max f squared", max(fsquared), np.mean(fsquared)	, np.std(fsquared))
 def plotWithinScanMotion():
 	perScan=[dict(),dict(),dict(), dict()]
@@ -230,65 +279,88 @@ def plotWithinScanMotion():
 					elif s in dep_subjects:
 						perScan[ind][scan][2][s].append(val)
 
-	sets={5:["T1","T2","Diffusion","T1 all vnavs - no reacq", "T2 all vnavs - no reacq"],4:["Rest","Gambling","FaceMatching","Conflict"]}
+	#sets={5:["T1","T2","Diffusion","T1 all vnavs - no reacq", "T2 all vnavs - no reacq"],4:["Rest","Gambling","FaceMatching","Conflict"]}
+	scans=["T1","T2","Diffusion","Rest","Gambling","FaceMatching","Conflict","T1 all vnavs - no reacq", "T2 all vnavs - no reacq"]
+	header=["","T1w","T2w","dMRI","rfMRI","IPT","EPT","EIT","T1w (no vNav)", "T2w (no vNav)"]
+	
+	table=dict()
+	table["CA vs AA"] = ["CA vs AA"] 	
+	table["CA vs DA"] = ["CA vs DA"]  	
+	table["AA vs DA"] = ["AA vs DA"] 
+	
 	nCA = len(perScan[0]["T1"][0])
 	nAA = len(perScan[0]["T1"][1])
 	nDA = len(perScan[0]["T1"][2])
 
-	labels=["FD"]
+	labels=["FD", "Rotation", "Translation"]
 	plotted=0
-	for sizeFig, scansInFigure  in sets.items():
-		for i, l in enumerate(labels):
-			for scanName in scansInFigure:
-				f = plt.figure(plotted, figsize=(5,5))
-				plt.title(namesPerScan[scanName])
-				categories= perScan[i][scanName]
-				print (scanName)
-				values =[[],[],[]]
-				x=[]
-				y=[]
-				for q in range(len(values)):
-					for sub, snr in categories[q].items():
-						if sub in subjects and len(snr)>0:
-							values[q].append(sum(snr)/len(snr))
-							y.append(sum(snr)/len(snr))
-							cats = [0,0,0]
-							cats[q]=1
-							x.append(cats)
-					
-					violin_parts = plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
-					for pc in violin_parts['bodies']:
-						pc.set_facecolor(colors[q])
-						pc.set_edgecolor(colors[q])
-						pc.set_linewidth(1)
-						pc.set_alpha(0.5)
-
-					for partname in ('cbars','cmins','cmaxes','cmeans'):
-						vp = violin_parts[partname]
-						vp.set_edgecolor(colors[q])
-						vp.set_linewidth(1)
-				plt.xticks([0,1,2],["CA","AA","DA"])
-				plt.ylim(0,3)
-				f.tight_layout()
+	for i, l in enumerate(labels):
+		for scanName in scans:
+			f = plt.figure(plotted, figsize=(5,5))
+			plt.title(namesPerScan[scanName])
+			categories= perScan[i][scanName]
+			print (scanName)
+			values =[[],[],[]]
+			x=[]
+			y=[]
+			for q in range(len(values)):
+				for sub, snr in categories[q].items():
+					if sub in subjects and len(snr)>0:
+						values[q].append(sum(snr)/len(snr))
+						y.append(sum(snr)/len(snr))
+						cats = [0,0,0]
+						cats[q]=1
+						x.append(cats)
 				
-				
-				plotted+=1
-	
-				print( np.shape(x), np.shape(y))
-				est = sm.OLS( y,x)
-				est2 = est.fit()
-				fsquared.append(est2.rsquared/(1-est2.rsquared))
-				plt.text(1,2.2,'\n'.join((r'$f^2=%.2f$' % (est2.rsquared/(1-est2.rsquared), ),	r'$p=%.2f$' % (est2.f_pvalue, )))) #, {'size':'14'})
-				print(scanName)
-				t_test= est2.t_test([1, 0,-1])
-				print("CA vs DA", "r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nDA +nCA -2 )))
-				t_test= est2.t_test([0, 1,-1])
-				print("AA vs DA", "r=%10.3e"%t_test.pvalue,"r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nDA -2 )))
+				violin_parts = plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
+				for pc in violin_parts['bodies']:
+					pc.set_facecolor(colors[q])
+					pc.set_edgecolor(colors[q])
+					pc.set_linewidth(1)
+					pc.set_alpha(0.5)
 
-				t_test= est2.t_test([1, -1,0])
-				print("CA vs AA","r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nCA -2 )))
+				for partname in ('cbars','cmins','cmaxes','cmeans'):
+					vp = violin_parts[partname]
+					vp.set_edgecolor(colors[q])
+					vp.set_linewidth(1)
+			plt.xticks([0,1,2],["CA","AA","DA"])
+			plt.ylim(0,3)
+			f.tight_layout()
 			
-				f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_cat_{scanName}.png")
+			
+			plotted+=1
+
+			print( np.shape(x), np.shape(y))
+			est = sm.OLS( y,x)
+			est2 = est.fit()
+			fsquared.append(est2.rsquared/(1-est2.rsquared))
+			#plt.text(1,2.2,'\n'.join((r'$f^2=%.2f$' % (est2.rsquared/(1-est2.rsquared), ),	r'$p=%.2f$' % (est2.f_pvalue, )))) #, {'size':'14'})
+			
+			patch1 = mpatches.Patch(color='none', label=r'$f^2=.%s$' % format( est2.rsquared/(1-est2.rsquared),'.3f')[2:])
+			if est2.f_pvalue*7 >.999:
+				patch2 = mpatches.Patch(color='none', label=r'$p>.999$')
+			else:
+				patch2 = mpatches.Patch(color='none', label=r'$p=.%s$' % format( est2.f_pvalue*7,'.3f')[2:])
+			plt.legend(handles=[patch1, patch2],frameon=False, loc='upper right')
+			
+			print(scanName)
+					
+			f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_cat_{scanName}.png")
+			t_test= est2.t_test([1, 0,-1])
+			table["CA vs DA"].append( getFormatedText_ttest(t_test, nCA+nDA, 3*7))
+
+			t_test= est2.t_test([0, 1,-1])
+			table["AA vs DA"].append( getFormatedText_ttest(t_test, nAA+nDA, 3*7))
+
+			t_test= est2.t_test([1, -1,0])
+			table["CA vs AA"].append( getFormatedText_ttest(t_test, nAA+nCA, 3*7))
+
+
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_within_cat.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(header)
+		for k, v in table.items():
+			writer.writerow(v)
 	print("max f squared", max(fsquared), np.mean(fsquared)	, np.std(fsquared))
 def plotBetweenScanMotion():
 
@@ -330,64 +402,83 @@ def plotBetweenScanMotion():
 
 			except:
 				print(row)
-	sets={2:["T1_T2","DiffusionDiffusion"],4:["RestRest","GamblingGambling","FaceMatchingFaceMatching","ConflictConflict"]}
+	scans=["T1_T2","DiffusionDiffusion","RestRest","GamblingGambling","FaceMatchingFaceMatching","ConflictConflict"]
+	header=["","T1w-T2w","dMRI","rfMRI","IPT","EPT","EIT"]
+	
+	table=dict()
+	table["CA vs AA"] = ["CA vs AA"] 	
+	table["CA vs DA"] = ["CA vs DA"]  	
+	table["AA vs DA"] = ["AA vs DA"] 
 	labels=["FD"]
 	nCA = len(perScan[0]["T1_T2"][0])
 	nAA = len(perScan[0]["T1_T2"][1])
 	nDA = len(perScan[0]["T1_T2"][2])
 	
 	plotted=0
-	for sizeFig, scansInFigure  in sets.items():
-		for i,l in enumerate(labels):
-			for scanName in scansInFigure:
-				f = plt.figure(plotted, figsize=(5,5))
-				plt.title(labels_sets[scanName])
-				print(i)
-				categories= perScan[i][scanName]
-				print (scanName)
-				values =[[],[],[]]
-				x=[]
-				y=[]
-				for q in range(len(values)):
-					for sub, snr in categories[q].items():
-						if sub in subjects and len(snr)>0:
-							values[q].append(sum(snr)/len(snr))
-							y.append(sum(snr)/len(snr))
-							cats = [0,0,0]
-							cats[q]=1
-							x.append(cats)
-					violin_parts =plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
-					for pc in violin_parts['bodies']:
-						pc.set_facecolor(colors[q])
-						pc.set_edgecolor(colors[q])
-						pc.set_linewidth(1)
-						pc.set_alpha(0.5)
-					for partname in ('cbars','cmins','cmaxes','cmeans'):
-						vp = violin_parts[partname]
-						vp.set_edgecolor(colors[q])
-						vp.set_linewidth(1)
+	for i,l in enumerate(labels):
+		for scanName in scans:
+			f = plt.figure(plotted, figsize=(5,5))
+			plt.title(labels_sets[scanName])
+			print(i)
+			categories= perScan[i][scanName]
+			print (scanName)
+			values =[[],[],[]]
+			x=[]
+			y=[]
+			for q in range(len(values)):
+				for sub, snr in categories[q].items():
+					if sub in subjects and len(snr)>0:
+						values[q].append(sum(snr)/len(snr))
+						y.append(sum(snr)/len(snr))
+						cats = [0,0,0]
+						cats[q]=1
+						x.append(cats)
+				violin_parts =plt.violinplot(values[q], [q], points=20, widths=0.3, showmeans=True) #,showmedians=True)
+				for pc in violin_parts['bodies']:
+					pc.set_facecolor(colors[q])
+					pc.set_edgecolor(colors[q])
+					pc.set_linewidth(1)
+					pc.set_alpha(0.5)
+				for partname in ('cbars','cmins','cmaxes','cmeans'):
+					vp = violin_parts[partname]
+					vp.set_edgecolor(colors[q])
+					vp.set_linewidth(1)
 
-				plt.xticks([0,1,2],["CA","AA","DA"])
-				plt.ylim(0,60)
-				f.tight_layout()
-					
-				print( np.shape(x), np.shape(y))
-				est = sm.OLS( y,x)
-				est2 = est.fit()
-				fsquared.append(est2.rsquared/(1-est2.rsquared))
-				plt.text(1,40,'\n'.join((r'$f^2=%.2f$' % (est2.rsquared/(1-est2.rsquared), ),	r'$p=%.2f$' % (est2.f_pvalue, )))) #, {'size':'14'})
-				print(scanName)
-				t_test= est2.t_test([1, 0,-1])
-				print("CA vs DA", "r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nDA +nCA -2 )))
-				t_test= est2.t_test([0, 1,-1])
-				print("AA vs DA", "r=%10.3e"%t_test.pvalue,"r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nDA -2 )))
-
-				t_test= est2.t_test([1, -1,0])
-				print("CA vs AA","r=%10.3e"%t_test.pvalue, "r=%10.3e"%(t_test.tvalue[0]**2/(t_test.tvalue[0]**2 + nAA +nCA -2 )))
-
-				f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_cat_{scanName}.png")
+			plt.xticks([0,1,2],["CA","AA","DA"])
+			plt.ylim(0,60)
+			f.tight_layout()
 				
-				plotted+=1
+			print( np.shape(x), np.shape(y))
+			est = sm.OLS( y,x)
+			est2 = est.fit()
+			fsquared.append(est2.rsquared/(1-est2.rsquared))
+			#plt.text(1,40,'\n'.join((r'$f^2=%.2f$' % (est2.rsquared/(1-est2.rsquared), ),	r'$p=%.2f$' % (est2.f_pvalue, )))) #, {'size':'14'})
+			patch1 = mpatches.Patch(color='none', label=r'$f^2=.%s$' % format( est2.rsquared/(1-est2.rsquared),'.3f')[2:])
+			if est2.f_pvalue*6 >.999:
+				patch2 = mpatches.Patch(color='none', label=r'$p>.999$')
+			else:
+				patch2 = mpatches.Patch(color='none', label=r'$p=.%s$' % format( est2.f_pvalue*6,'.3f')[2:])
+			plt.legend(handles=[patch1, patch2],frameon=False, loc='upper right')
+			
+			print(scanName)
+			f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_cat_{scanName}.png")
+			
+			plotted+=1
+			t_test= est2.t_test([1, 0,-1])
+			table["CA vs DA"].append( getFormatedText_ttest(t_test, nCA+nDA, 3*6))
+
+			t_test= est2.t_test([0, 1,-1])
+			table["AA vs DA"].append( getFormatedText_ttest(t_test, nAA+nDA, 3*6))
+
+			t_test= est2.t_test([1, -1,0])
+			table["CA vs AA"].append( getFormatedText_ttest(t_test, nAA+nCA, 3*6))
+
+
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_between_cat.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(header)
+		for k, v in table.items():
+			writer.writerow(v)
 
 	print("max f squared", max(fsquared), np.mean(fsquared)	, np.std(fsquared))
 def subjectsHistograms():
@@ -485,71 +576,75 @@ def plotSNRContinuousMeasures():
 				print(row)
 
 	subjects, sex, scores = utils.loadBANDAscores(outliers)
-	sets={3:["T1","T2","Diffusion"],4:["Rest","Gambling","FaceMatching","Conflict"]}
 	plotted=0
 	print(scores.keys())
-	for sizeFig, scansInFigure  in sets.items():
-		for key, score in scores.items():
-			if key in ["BIS","BAS","MFQ","SHAPS_CNT", "wasi", "STAIS", "STAIT", "RCADSA", "RCADSD"]:
-				print(key)
-				for scanName in scansInFigure:
-					f= plt.figure(plotted, figsize=(5,5))
+	
+	table=dict()
+	for i, a in enumerate(scores_CSV):
+		table[a]=[scores_header_CSV[i]]
+	
+	for key, score in scores.items():
+		if key in scores_CSV:
+			print(key)
+			for scanName in scansCSV:
+				f= plt.figure(plotted, figsize=(5,5))
 
-					categories = snr_perScan[scanName]
-					plt.title(namesPerScan[scanName])
-					x=[]
-					y=[]
-					for q in range(len(categories)):
-						for sub, snr in categories[q].items():
-							if sub in subjects and len(snr)>0:
-								#try:
-								plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
-								x.append(score[subjects.index(sub)])
-								y.append(sum(snr)/len(snr))
-								#except Exception e:
-								#	print(e)
-					if "T1" in scanName:
-						plt.ylim(5,15)
-					elif "T2" in scanName:
-						plt.ylim(0,6)
-					else:
-						plt.ylim(0,30)
-					plt.xlabel(key)
-					if key is "SHAPS_CNT":
-						plt.xlabel("SHAPS > 2 = Anhedonia ")
-						plt.plot( [2.5]*30, range(0,30), '--', color='black')
-					plotted+=1
-					print(len(x))
-					slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-					print(key, scanName)
-					print("p=%10.3e"%p_value)
-					pc= p_value*9*7
-					if pc>1:
-						print("pc=1")
-					else:
-						print("pc=%10.3e"% pc)
-					print( "r=%10.3e"%r_value**2)
-					rsquared.append(r_value**2)
-					#if "Rest" in scanName  and "BAS" in key:
-					#	x2= sm.add_constant(x)
-					#	est = sm.OLS(y, x2)
-					#	est2 = est.fit()
-					#	print(est2.summary())
-					#	print(est2.t_test([0, 1]))
-					#	T_test = est2.t_test([0,1])
-					#	print(T_test.effect)
-					#	print(T_test.pvalue)
-					#	print(T_test.tvalue)
-						
-					#
-					#print(key, scanName,p_value*9*7, r_value**2)
-					x_draw =  np.array ( range(int(min(x)), int(max(x))))
-					points= x_draw*slope +intercept
-					plt.plot(x_draw, x_draw*slope + intercept, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
-					plt.legend(frameon=False)
-					
-					f.tight_layout()
-					f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_continuous_{key}{scanName}.png")
+				categories = snr_perScan[scanName]
+				plt.title(namesPerScan[scanName])
+				x=[]
+				y=[]
+				for q in range(len(categories)):
+					for sub, snr in categories[q].items():
+						if sub in subjects and len(snr)>0:
+							#try:
+							plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
+							x.append(score[subjects.index(sub)])
+							y.append(sum(snr)/len(snr))
+							#except Exception e:
+							#	print(e)
+				if "T1" in scanName:
+					plt.ylim(5,15)
+				elif "T2" in scanName:
+					plt.ylim(0,6)
+				else:
+					plt.ylim(0,30)
+				plt.xlabel(key)
+				if key is "SHAPS_CNT":
+					plt.xlabel("SHAPS > 2 = Anhedonia ")
+					plt.plot( [2.5]*30, range(0,30), '--', color='black')
+				plotted+=1
+				print(len(x))
+				slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+				print(key, scanName)
+				print("p=%10.3e"%p_value)
+				pc= p_value*9*7
+				if pc>1:
+					print("pc=1")
+				else:
+					print("pc=%10.3e"% pc)
+				print( "r=%10.3e"%r_value**2)
+				rsquared.append(r_value**2)
+				
+				#print(key, scanName,p_value*9*7, r_value**2)
+				x_draw =  np.array ( range(int(min(x)), int(max(x))))
+				points= x_draw*slope +intercept
+				
+				plt.plot(x_draw, x_draw*slope + intercept ) #, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
+				#plt.legend(frameon=False)
+				
+				_,_, text = getFormatedText_regression(p_value, r_value, len(scansCSV)*len(scores_CSV))			
+				patch1, patch2,_ = getFormatedText_regression(p_value, r_value, len(scansCSV)*4)			
+				table[key].append(text)
+
+				plt.legend(handles=[patch1, patch2],frameon=False) #, loc='upper right')
+	
+				f.tight_layout()
+				f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_continuous_{key}{scanName}.png")
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/SNR_scores.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(headerCSV)
+		for k, v in table.items():
+			writer.writerow(v)
 	print("rsquared max, mean, std", max(rsquared), np.mean(rsquared), np.std(rsquared))
 
 def plotWithinScanMotionContinuousMeasures():
@@ -591,58 +686,69 @@ def plotWithinScanMotionContinuousMeasures():
 			#	print(row)
 
 	subjects, sex, scores = utils.loadBANDAscores(outliers)
-	sets={3:["T1","T2","Diffusion"],4:["Rest","Gambling","FaceMatching","Conflict"]}
 	labels=["FD" ]
 	plotted=0
-	for sizeFig, scansInFigure  in sets.items():
-		for key, score in scores.items():
-			if key in ["BIS","BAS","MFQ","SHAPS_CNT", "wasi", "STAIS", "STAIT", "RCADSA", "RCADSD"]:
-				for i, l in enumerate(labels):
-					for scanName in scansInFigure:
-						categories = perScan[i][scanName]
-						print (scanName)
-						f = plt.figure(plotted, figsize=(5,5))	
-						plt.title(namesPerScan[scanName])
-						x=[]
-						y=[]
-						for q in range(len(categories)):
-							for sub, snr in categories[q].items():
-								if sub in subjects:
-									try:
-										if len(snr)>0:
-											plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
-											x.append(score[subjects.index(sub)])
-											y.append(sum(snr)/len(snr))
-									except:
-										print(sub)
-
-						slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-						print(key, scanName)
-						print("p=%10.3e"%p_value)
-						pc= p_value*9*7
-						if pc>1:
-							print("pc=1")
-						else:
-							print("pc=%10.3e"% pc)
-						print( "r=%10.3e"%r_value**2)
-
-						rsquared.append(r_value**2)
-						x_draw =  np.array ( range(int(min(x)), int(max(x))))
-						#plt.plot(x_draw, x_draw*slope + intercept )
-
-						plt.plot(x_draw, x_draw*slope + intercept, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
-						plt.xlabel(key)
-						plt.ylim((-.05,2.2))
-						plt.legend(frameon=False)
-					
-						if key is "SHAPS_CNT":
-							plt.xlabel("SHAPS > 2 = Anhedonia ")
-							plt.plot( [2.5]*30, np.linspace(0,2.2,30), '--', color='black')
-
-						f.tight_layout()
-						f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_continuous_{scanName}_{key}.png")
-						plotted+=1
+	table=dict()
+	for i, a in enumerate(scores_CSV):
+		table[a]=[scores_header_CSV[i]]
 	
+	for key, score in scores.items():
+		if key in scores_CSV:
+			print(key)
+			for scanName in scansCSV:
+				for i, l in enumerate(labels):
+					categories = perScan[i][scanName]
+					print (scanName)
+					f = plt.figure(plotted, figsize=(5,5))	
+					plt.title(namesPerScan[scanName])
+					x=[]
+					y=[]
+					for q in range(len(categories)):
+						for sub, snr in categories[q].items():
+							if sub in subjects:
+								try:
+									if len(snr)>0:
+										plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
+										x.append(score[subjects.index(sub)])
+										y.append(sum(snr)/len(snr))
+								except:
+									print(sub)
+
+					plt.xlabel(key)
+					plt.ylim((-.05,2.2))
+				
+					if key is "SHAPS_CNT":
+						plt.xlabel("SHAPS > 2 = Anhedonia ")
+						plt.plot( [2.5]*30, np.linspace(0,2.2,30), '--', color='black')
+
+					f.tight_layout()
+					slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+					print(key, scanName)
+					print("p=%10.3e"%p_value)
+					pc= p_value*9*7
+					if pc>1:
+						print("pc=1")
+					else:
+						print("pc=%10.3e"% pc)
+					print( "r=%10.3e"%r_value**2)
+
+					rsquared.append(r_value**2)
+					x_draw =  np.array ( range(int(min(x)), int(max(x))))
+					plt.plot(x_draw, x_draw*slope + intercept ) #, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
+					
+					_,_, text = getFormatedText_regression(p_value, r_value, len(scansCSV)*len(scores_CSV))			
+					patch1, patch2,_ = getFormatedText_regression(p_value, r_value, len(scansCSV)*4)			
+					table[key].append(text)
+					
+					plt.legend(handles=[patch1, patch2],frameon=False) #, loc='upper right')
+					f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_continuous_{scanName}_{key}.png")
+					plotted+=1
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/FD_within_scores.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(headerCSV)
+		for k, v in table.items():
+			writer.writerow(v)
+
 
 	print("rsquared max, mean, std", max(rsquared), np.mean(rsquared), np.std(rsquared))
 def plotBetweenScanMotionContinuousMeasures():
@@ -684,62 +790,73 @@ def plotBetweenScanMotionContinuousMeasures():
 				print(row)
 
 	subjects, sex, scores = utils.loadBANDAscores(outliers)
-	sets={2:["T1_T2","DiffusionDiffusion"],4:["RestRest","GamblingGambling","FaceMatchingFaceMatching","ConflictConflict"]}
 	labels=["FD"]
 	plotted=0
-	for sizeFig, scansInFigure  in sets.items():
-		for key, score in scores.items():
-			if key in ["BIS","BAS","MFQ","SHAPS_CNT", "wasi", "STAIS", "STAIT", "RCADSA", "RCADSD"]:
-				for i, l in enumerate(labels):
-					for scanName in scansInFigure:
-						categories = perScan[i][scanName]
-						f = plt.figure(plotted, figsize=(5,5))	
-						plt.title(labels_sets[scanName])
-						x=[]
-						y=[]
-						
-						for q in range(len(categories)):
-							for sub, snr in categories[q].items():
-								if sub in subjects:
-									try:
-										if len(snr) >0:
-											plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
-											x.append(score[subjects.index(sub)])
-											y.append(sum(snr)/len(snr))
-									except:
-										print(sub)
-
-						slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-						print(key, scanName)
-						print("p=%10.3e"%p_value)
-						pc= p_value*9*7
-						if pc>1:
-							print("pc=1")
-						else:
-							print("pc=%10.3e"% pc)
-						print( "r=%10.3e"%r_value**2)
-						rsquared.append(r_value**2)				
-						x_draw =  np.array ( range(int(min(x)), int(max(x))))
-						
-						#plt.plot(x_draw, x_draw*slope + intercept )
-
-						plt.plot(x_draw, x_draw*slope + intercept, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
-						plt.legend(frameon=False)
-					
-						plt.xlabel(key)
-						if "T1" in scanName:
-							plt.ylim((-.1,60))
-						else:
-							plt.ylim((-.1,20))
-		
-						f.tight_layout()
-						if key is "SHAPS_CNT":
-							plt.xlabel("SHAPS > 2 = Anhedonia ")
-							plt.plot( [2.5]*60,np.linspace(0,60,60), '--', color='black')
-
-						plotted+=1
-						f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_continuous_{scanName}_{key}.png")
+	table=dict()
+	for i, a in enumerate(scores_CSV):
+		table[a]=[scores_header_CSV[i]]
 	
+	for key, score in scores.items():
+		if key in scores_CSV:
+			print(key)
+			for scanName in scansBCSV:
+				for i, l in enumerate(labels):
+					categories = perScan[i][scanName]
+					f = plt.figure(plotted, figsize=(5,5))	
+					plt.title(labels_sets[scanName])
+					x=[]
+					y=[]
+					
+					for q in range(len(categories)):
+						for sub, snr in categories[q].items():
+							if sub in subjects:
+								try:
+									if len(snr) >0:
+										plt.scatter(score[subjects.index(sub)], sum(snr)/len(snr), color=colors[q]) #, label=labelGroups[q]) #,showmedians=True)
+										x.append(score[subjects.index(sub)])
+										y.append(sum(snr)/len(snr))
+								except:
+									print(sub)
+
+					slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+					print(key, scanName)
+					print("p=%10.3e"%p_value)
+					pc= p_value*9*7
+					if pc>1:
+						print("pc=1")
+					else:
+						print("pc=%10.3e"% pc)
+					print( "r=%10.3e"%r_value**2)
+					rsquared.append(r_value**2)				
+					x_draw =  np.array ( range(int(min(x)), int(max(x))))
+					
+					plt.plot(x_draw, x_draw*slope + intercept ) #, label='\n'.join((r'$r^2=$%1.0e' % (r_value**2, ), r'$p=$%1.0e' % (p_value, )))) #,  ha='center', va='center', transform=ax.transAxes) #, {'size':'14'})
+					
+					_,_, text = getFormatedText_regression(p_value, r_value, len(scansCSV)*len(scores_CSV))			
+					patch1, patch2,_ = getFormatedText_regression(p_value, r_value, len(scansCSV)*4)			
+					table[key].append(text)
+
+					plt.legend(handles=[patch1, patch2],frameon=False) #, loc='upper right')
+				
+					plt.xlabel(key)
+					if "T1" in scanName:
+						plt.ylim((-.1,60))
+					else:
+						plt.ylim((-.1,20))
+	
+					f.tight_layout()
+					if key is "SHAPS_CNT":
+						plt.xlabel("SHAPS > 2 = Anhedonia ")
+						plt.plot( [2.5]*60,np.linspace(0,60,60), '--', color='black')
+
+					plotted+=1
+					f.savefig(f"/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/motion_{l}_continuous_{scanName}_{key}.png")
+
+	with open("/space/erebus/2/users/vsiless/latex_git/latex/BANDA_MRI_paper/figs/FD_between_scores.csv", 'w') as csvfile:
+		writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		writer.writerow(headerBCSV)
+		for k, v in table.items():
+			writer.writerow(v)
 
 	print("rsquared max, mean, std", max(rsquared), np.mean(rsquared), np.std(rsquared))
 def plotFSThreashold():
@@ -776,7 +893,7 @@ def plotFSThreashold():
 	for sizeFig, scansInFigure  in sets.items():
 		for i, scanName in enumerate(scansInFigure):
 			values = snr_perScan[scanName]
-			violin_parts = plt.violinplot(np.array(values)*100/frames[scanName], [i], points=20, widths=0.3, showmedians=True, showextrema=False) #,showmedians=True)
+			violin_parts = plt.violinplot(np.array(values)*100/frames[scanName], [i], points=20, widths=0.3, showmedians=True) #, showextrema=False) #,showmedians=True)
 			discarded += sum(np.array(values)*100/frames[scanName]>20)
 			total+= len(values)
 			f.tight_layout()
@@ -874,13 +991,13 @@ def questionaires():
 	plt.show()
 
 
-plotSNRAvg()
+#plotSNRAvg()
 #plotSNRContinuousMeasures()
 
 #plotWithinScanMotion()
 #plotBetweenScanMotion()
 
-#plotWithinScanMotionContinuousMeasures()
+plotWithinScanMotionContinuousMeasures()
 #plotBetweenScanMotionContinuousMeasures()
 
 #plotFSThreashold()

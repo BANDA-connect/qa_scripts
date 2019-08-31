@@ -1,4 +1,4 @@
-#/space/erebus/1/users/jwang/jon2/bin/python3.6 motion_snr_plots.py
+#/space/erebus/1/users/jwang/jon2/bin/python3.6 motion_snr_plots_v3.py
 
 '''
 Functions:
@@ -21,30 +21,17 @@ from pylab import polyfit
 from pylab import polyval
 import utils
 
-
-
 from numpy import linalg as LA
 from pyquaternion import Quaternion
 import matplotlib.patches as mpatches
 import csv
 from nipy.modalities.fmri.glm import GeneralLinearModel
 
-
-subjects = [ "BANDA001", "BANDA002","BANDA003","BANDA004","BANDA005","BANDA006","BANDA007","BANDA008","BANDA009","BANDA010","BANDA011","BANDA012","BANDA013", "BANDA014", "BANDA015", "BANDA016", "BANDA017","BANDA018","BANDA019","BANDA020","BANDA021","BANDA022","BANDA023","BANDA024","BANDA025","BANDA026","BANDA027","BANDA028","BANDA029","BANDA030","BANDA031","BANDA032",
-"BANDA033","BANDA034","BANDA035","BANDA036","BANDA037","BANDA038","BANDA039","BANDA040",
-"BANDA041","BANDA042","BANDA043","BANDA044","BANDA045","BANDA046","BANDA047","BANDA048","BANDA049",
-"BANDA050","BANDA051","BANDA052","BANDA053","BANDA054","BANDA055","BANDA056","BANDA057","BANDA058","BANDA059","BANDA060", "BANDA061", "BANDA062", "BANDA063","BANDA064","BANDA065","BANDA066","BANDA067","BANDA068","BANDA069","BANDA070","BANDA071","BANDA072","BANDA073","BANDA074","BANDA075","BANDA076","BANDA077","BANDA078","BANDA079",
-"BANDA080","BANDA081","BANDA082","BANDA083","BANDA084","BANDA085","BANDA086","BANDA087","BANDA088","BANDA089","BANDA090"] #, "BANDA091", "BANDA092", "BANDA093","BANDA094","BANDA095","BANDA096","BANDA097","BANDA098","BANDA099","BANDA100","BANDA101", "BANDA102","BANDA103","BANDA104","BANDA105","BANDA106","BANDA107","BANDA108","BANDA109","BANDA110","BANDA111","BANDA112","BANDA113", "BANDA114", "BANDA115", "BANDA116", "BANDA117","BANDA118","BANDA119"]
-dep_subjects = ["BANDA024","BANDA047"]
-anx_subjects = ["BANDA017","BANDA021","BANDA022","BANDA023","BANDA025","BANDA026","BANDA030","BANDA031","BANDA032","BANDA035","BANDA036","BANDA039","BANDA040","BANDA041","BANDA042","BANDA048",
-"BANDA049""BANDA052","BANDA055","BANDA056","BANDA057","BANDA060","BANDA063","BANDA064","BANDA065","BANDA069","BANDA070"]
-dep_and_anx_subjects = ["BANDA006","BANDA015","BANDA019","BANDA020","BANDA028","BANDA029","BANDA037","BANDA044","BANDA045","BANDA053","BANDA062","BANDA066","BANDA073","BANDA074"]
-
-output="/space/erebus/1/users/data/comparisonPlots_1_88/"
-output="/space/erebus/1/users/banda/plots"
-
+outliers=["BANDA051","BANDA104","BANDA131","BANDA134","BANDA129","BANDA137"]
+output="/space/erebus/1/users/data/scores/new2"
 
 matplotlib.rcParams.update({'font.size': 18})
+
 def readVNavsScoreFiles(s,t):
 
 	f = open("/space/erebus/1/users/data/preprocess/"+s+"/motion/vnavs"+t+"Score.csv", 'r')
@@ -131,7 +118,6 @@ def getRotation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineInd
 def getTranslationAbsolute(inFile, xColumn,lineIndex,acq_time,ref=0):
 	return getTranslation( inFile,xColumn,lineIndex,acq_time,ref)
 
-
 def getRotationAbsolute(inFile, xColumn,lineIndex,acq_time,ref=0):
 	return getRotation(inFile,xColumn,lineIndex,acq_time,ref)
 
@@ -143,6 +129,7 @@ def getFileData(fileN):
 		column =3
 		acq_time=.8
 	return column, acq_time
+
 def getFilePath(fileN,s):
 	f = "/space/erebus/1/users/data/preprocess/"+s+"/"+fileN
 	if not os.path.isfile(f):
@@ -172,20 +159,17 @@ def motionWithin_measures():
 
 	indexPerDiffusion = {'Diffusion1':[0,98], 'Diffusion2':[98,196], 'Diffusion3':[196,295],'Diffusion4':[295,394]}
 	fmri_order = {'Rest1':0,'Rest2':1,'Rest3':2,'Rest4':3,'Gambling1':4,'Gambling2':5, 'FaceMatching1':6,'FaceMatching2':7, 'Conflict1':8,'Conflict2':9,'Conflict3':10,'Conflict4':11}
-	outliers=["BANDA069","BANDA070", "BANDA071", "BANDA089","BANDA090"]#"BANDA071", "BANDA070","BANDA005","BANDA045","BANDA025","BANDA067","BANDA069","BANDA002","BANDA017","BANDA041","BANDA043","BANDA063","BANDA010","BANDA023","BANDA036","BANDA050","BANDA059","BANDA054","BANDA013","BANDA042","BANDA031","BANDA022"]#,"BANDA031"] #,"BANDA063"] #,"BANDA064"] #"BANDA061","BANDA062","BANDA063","BANDA064","BANDA065","BANDA066","BANDA067","BANDA068","BANDA069","BANDA070","BANDA071","BANDA031","BANDA005","BANDA054","BANDA058","BANDA045"] #"BANDA029","BANDA009","BANDA033","BANDA038","BANDA039","BANDA048","BANDA057","BANDA061","BANDA065","BANDA028","BANDA021","BANDA031","BANDA067","BANDA069","BANDA070","BANDA004","BANDA005","BANDA014","BANDA024","BANDA034","BANDA044","BANDA043","BANDA052","BANDA049", 'BANDA054', 'BANDA056', 'BANDA058', 'BANDA059', 'BANDA062', 'BANDA066', 'BANDA068', 'BANDA054', 'BANDA056', 'BANDA058', 'BANDA059', 'BANDA062', 'BANDA066', 'BANDA047']
-	subjects, sex, scores = utils.loadBANDA(outliers)
 
-	motionWithin_output=csv.writer(open('/space/erebus/1/users/data/scores/motionWithin_avg_output.csv','w+'))
+	subjects, sex, scores = utils.loadBANDA140(outliers)
+
+	motionWithin_output=csv.writer(open('/space/erebus/1/users/data/scores/new2/motionWithin_avg_output_rjj020419.csv','w+'))
 	motionWithin_output.writerow(['subject','rot_trans','avg_score','questionnaire','questionnaire_score'])
-
-
 
 	for key, score in scores.items():
 
 		print (scans)
 		f, axarr = plt.subplots(1, 2,figsize=(23,14))
 		f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
-
 
 		trans_boxplot_data = [[],[]]
 		rotat_boxplot_data = [[],[]]
@@ -212,7 +196,6 @@ def motionWithin_measures():
 			for s_index,s in enumerate(subjects):
 				t_accumulate = 0
 
-
 				for name in scans:
 					fileN = studies[name.split()[0]]
 
@@ -227,7 +210,6 @@ def motionWithin_measures():
 					if "dMRI" in fileN:
 						index =diffusion[i]
 					filePath = getFilePath(fileN,s)
-
 
 						#print(i,j)
 						#print(name)
@@ -244,8 +226,6 @@ def motionWithin_measures():
 						t=  met(filePath,column,np.sort(ind),acq_time)
 						t_accumulate += t
 
-
-
 				avg_t = t_accumulate/len(scans)
 
 				if s_index == 0: ymin_value = avg_t
@@ -258,13 +238,13 @@ def motionWithin_measures():
 
 				if str(str(key))=='Anhedonia':
 					if str(met)[13:18]=='Trans':
-						if float(score[s_index])<3: 	
+						if float(score[s_index])<3:
 							trans_boxplot_data[0].append(avg_t)
 							anhedonia_no += 1
-						else: 
+						else:
 							trans_boxplot_data[1].append(avg_t)
 							anhedonia += 1
-					if str(met)[13:18]=='Rotat': 
+					if str(met)[13:18]=='Rotat':
 
 						if float(score[s_index])<3: rotat_boxplot_data[0].append(avg_t)
 						else: rotat_boxplot_data[1].append(avg_t)
@@ -281,7 +261,7 @@ def motionWithin_measures():
 			#GLM
 			X=np.array([])
 			if key != 'Anhedonia':
-				X  = np.ones(len(x_values))	
+				X  = np.ones(len(x_values))
 				X =np.stack((X, x_values), axis=-1)
 				cval = np.hstack((0, -1))
 			else:
@@ -293,18 +273,17 @@ def motionWithin_measures():
 				cval = np.hstack((1, -1))
 			X= np.array(X).reshape(len(y_values),2)
 			Y=np.array(y_values )
-			
+
 			model = GeneralLinearModel(X)
 			model.fit(Y)
 			z_vals = model.contrast(cval).p_value() # z-transformed statistics
 			print(key, z_vals)
-			
+
 			axarr[i].set_ylabel("Average" + str(metric_label[metric.index(met)]))
 			axarr[i].set_xlabel(str(key))
 
 			axarr[i].set_xlim(xmin_value-(np.median(x_values)*.30),xmax_value+(np.median(x_values)*.30))
 			axarr[i].set_ylim(ymin_value-(np.median(y_values)*.30),ymax_value+(np.median(y_values)*.30))
-
 
 			if str(key)=='Anhedonia':
 				if i==0:
@@ -318,6 +297,7 @@ def motionWithin_measures():
 					boxes2.set_ylabel("Average " + str(metric_label[metric.index(met)]))
 					boxes2.set_xlabel(str(key))
 		#f.savefig("/space/erebus/1/users/data/comparisonPlots_1_88/plots/motion_snr/motionWithin_avg_"+str(key),dpi=199)
+		f.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_Within_avg_"+str(key),dpi=199)
 
 	if str(str(key))=='Anhedonia':
 		boxes1.set_ylim(0,max(trans_box_max_list)+.25)
@@ -328,10 +308,12 @@ def motionWithin_measures():
 		#print(trans_boxplot_data[1])
 		boxes1.boxplot(trans_boxplot_data,labels=['no anhedonia','anhedonia'])
 		boxes2.boxplot(rotat_boxplot_data,labels=['no anhedonia','anhedonia'])
-		g.savefig("/space/erebus/1/users/vsiless/QA_plots//motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
+		g.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
+		#g.savefig("/space/erebus/1/users/vsiless/QA_plots//motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
 		print(anhedonia)
 		print(anhedonia_no)
 		#plt.show()
+
 def motionBetween_measures():
 
 	studies = {'Diffusion1': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion2': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion3': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion4':
@@ -344,28 +326,24 @@ def motionBetween_measures():
 	scans=['Diffusion1','Diffusion2','Diffusion3','Diffusion4','Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1',
 	'T2']
 
-	diffusion=[ [0,98], [98,196],[196,295],[295,394]]
-
 	metric = [getTranslation, getRotation] #, getTranslationAbsolute, getRotationAbsolute]
 	metric_label=["Translation (mm/s)" , "Rotation ($\degree/s$)", "Absolute translation per second", "Absolute rotation per second"]
 
 	pairsOfStudies = {'Diffusion1':'Diffusion2','Diffusion2':'Diffusion3','Diffusion3':'Diffusion4',
 	'Rest1':'Rest2','Rest2':'Rest3','Rest3':'Rest4','Gambling1':'Gambling2','FaceMatching1':'FaceMatching2','Conflict1':'Conflict2','Conflict2':'Conflict3', 'Conflict3':'Conflict4'}
-	#pairsOfStudies = {'Diffusion2':'Diffusion3'}
 	pairsOfStudies=[('Diffusion1','Diffusion2'),('Diffusion2','Diffusion3'),('Diffusion3','Diffusion4'),('Rest1','Rest2'),('Rest2','Rest3'),('Rest3','Rest4'),('T1','T2'),('Gambling1','Gambling2'),(
 	'FaceMatching1', 'FaceMatching2'),('Conflict1','Conflict2'),('Conflict2','Conflict3'), ('Conflict3','Conflict4')]
+
+	diffusion=[ [0,98], [98,196],[196,295],[295,394]]
 	indexPerDiffusion = {'Diffusion1':[0,98], 'Diffusion2':[98,196], 'Diffusion3':[196,295],'Diffusion4':[295,394]}
 	fmri_order = {'Rest1':0,'Rest2':1,'Rest3':2,'Rest4':3,'Gambling1':4,'Gambling2':5, 'FaceMatching1':6,'FaceMatching2':7, 'Conflict1':8,'Conflict2':9,'Conflict3':10,'Conflict4':11}
-	outliers = ["BANDA089","BANDA090"]
-	subjects, sex, scores = utils.loadBANDA(outliers)
 
-	motionBetween_output=csv.writer(open('/space/erebus/1/users/data/scores/motionBetween_avg_output.csv','w+'))
+	subjects, sex, scores = utils.loadBANDA140(outliers)
+
+	motionBetween_output=csv.writer(open('/space/erebus/1/users/data/scores/new2/motionBetween_avg_output_rjj020419.csv','w+'))
 	motionBetween_output.writerow(['subject','rot_trans','avg_score','questionnaire','questionnaire_score'])
 
-
-
 	for key, score in scores.items():
-
 
 		f, axarr = plt.subplots(1, 2,figsize=(23,14))
 		f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
@@ -375,7 +353,6 @@ def motionBetween_measures():
 
 		#box plot measures
 		g, (boxes1,boxes2) = plt.subplots(nrows=1,ncols=2,figsize=(10,14))
-
 
 		for i,met in enumerate(metric):
 			axarr[i].set_title(str(met)[13:18])
@@ -398,7 +375,7 @@ def motionBetween_measures():
 					name1 , name2 = pairsOfStudies[a]
 
 					column,acq_time = getFileData(studies[name1])
-					if "Diffusion" in name1:	
+					if "Diffusion" in name1:
 						f1 = getFilePath(studies[name1],s)
 						f2 = getFilePath(studies[name2],s)
 						ind1=indexPerDiffusion[name1]
@@ -408,36 +385,31 @@ def motionBetween_measures():
 						f1 = getFilePath("/motion/structural_motion.nii.gz.par",s)
 						f2 = getFilePath("/motion/structural_motion.nii.gz.par",s)
 						ind1=0,1
-						ind2=1,2	
+						ind2=1,2
 					else:
 						f1 = getFilePath("/motion/fmriFirsts_motion.nii.gz.par",s)
 						f2 = getFilePath("/motion/fmriFirsts_motion.nii.gz.par",s)
 						ind1=fmri_order[name1],	fmri_order[name1]+1
 						ind2=fmri_order[name2],fmri_order[name2]+1
 
-
 					if f1 != None and f2 != None :
 						t=  met(f1,column, ind1,acq_time,0,f2, ind2)
 						t_accumulate += t
 
-
-
-
 				avg_t = t_accumulate/len(pairsOfStudies)
 				if s_index == 0: ymin_value = avg_t
-				ymin_value = min(ymin_value,avg_t)				
+				ymin_value = min(ymin_value,avg_t)
 				ymax_value = max(ymax_value,avg_t)
 
 				if s_index == 0: xmin_value = float(score[s_index])
-				xmin_value = min(xmin_value,float(score[s_index]))					
-				xmax_value = max(xmax_value,float(score[s_index]))	
-				
+				xmin_value = min(xmin_value,float(score[s_index]))
+				xmax_value = max(xmax_value,float(score[s_index]))
 
 				if str(str(key))=='Anhedonia':
 					if str(met)[13:18]=='Trans':
 						if float(score[s_index])<3: trans_boxplot_data[0].append(avg_t)
 						else: trans_boxplot_data[1].append(avg_t)
-					if str(met)[13:18]=='Rotat': 
+					if str(met)[13:18]=='Rotat':
 
 						if float(score[s_index])<3: rotat_boxplot_data[0].append(avg_t)
 						else: rotat_boxplot_data[1].append(avg_t)
@@ -469,38 +441,39 @@ def motionBetween_measures():
 					rotat_box_min_list = [ min(a) for a in rotat_boxplot_data]
 					boxes2.set_ylabel("Average " + str(metric_label[metric.index(met)]))
 					boxes2.set_xlabel(str(key))
-		f.savefig("/space/erebus/1/users/vsiless/QA_plots//motionBetween_avg_"+str(key),dpi=199)
+		f.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motionBetween_avg_"+str(key),dpi=199)
+		#f.savefig("/space/erebus/1/users/vsiless/QA_plots//motionBetween_avg_"+str(key),dpi=199)
+
 	if str(str(key))=='Anhedonia':
 		boxes1.set_ylim(min(trans_box_min_list)-.25,max(trans_box_max_list)+.25)
 		boxes2.set_ylim(min(rotat_box_min_list)-.25,max(rotat_box_max_list)+.25)
-
 
 		#print(trans_boxplot_data[0])
 		#print(trans_boxplot_data[1])
 		boxes1.boxplot(trans_boxplot_data,labels=['no anhedonia','anhedonia'])
 		boxes2.boxplot(rotat_boxplot_data,labels=['no anhedonia','anhedonia'])
-		g.savefig("/space/erebus/1/users/vsiless/QA_plots//motion_Between_avg_Anhedonia"+"_boxplot",dpi=199)
-
+		#g.savefig("/space/erebus/1/users/vsiless/QA_plots//motion_Between_avg_Anhedonia"+"_boxplot",dpi=199)
+		g.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_Between_avg_Anhedonia"+"_boxplot",dpi=199)
 		#plt.show()
 
 
 def snr_measures(premade_output = None):
 	studies = {'Diffusion1':'dMRI_AP1.nii.gz','Diffusion2':'dMRI_PA1.nii.gz','Diffusion3':'dMRI_AP2.nii.gz','Diffusion4':'dMRI_PA2.nii.gz','Rest1':'fMRI_rest1_AP.nii.gz', 'Rest2':'fMRI_rest2_PA.nii.gz', 'Rest3':'fMRI_rest3_AP.nii.gz', 'Rest4':'fMRI_rest4_PA.nii.gz', 'Gambling1':'tfMRI_gambling1_AP.nii.gz', 'Gambling2':'tfMRI_gambling2_PA.nii.gz','FaceMatching1':'tfMRI_faceMatching1_AP.nii.gz', 'FaceMatching2':'tfMRI_faceMatching2_PA.nii.gz', 'Conflict1':'tfMRI_conflict1_AP.nii.gz', 'Conflict2':'tfMRI_conflict2_PA.nii.gz', 'Conflict3':'tfMRI_conflict3_AP.nii.gz', 'Conflict4':'tfMRI_conflict4_PA.nii.gz', 'T2':'T2.nii.gz','T1':'T1.nii.gz'}
 	scans=['Diffusion1','Diffusion2','Diffusion3','Diffusion4','Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1','T2']
-	
+
 	diffusion=[ [0,98], [98,196],[196,295],[295,394]]
+
 	if premade_output == None:
-		snr_output=csv.writer(open('/space/erebus/1/users/data/scores/snr_avg_output.csv','w+'))
+		snr_output=csv.writer(open('/autofs/space/erebus_001/users/data/scores/new2/snr_avg_output_wComposites_rjj020419.csv','w+'))
 		snr_output.writerow(['subject','avg_snr','questionnaire','questionnaire_score'])
 
-	outliers=['BANDA089','BANDA090','BANDA091','BANDA092','BANDA093','BANDA094','BANDA095','BANDA103','BANDA104','BANDA105','BANDA106','BANDA107','BANDA108','BANDA109','BANDA110','BANDA111','BANDA112','BANDA113','BANDA114']
-	subjects, sex, scores = utils.loadBANDA(outliers)
-	print(subjects)
+	subjects, sex, scores = utils.loadBANDA140(outliers)
+	#print(subjects)
+
 	for key, score in scores.items():
 		f, axarr = plt.subplots(1,1,figsize=(23,14))
 		#f.tight_layout()
 		f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.30)
-
 
 		axarr.set_title(str(key))
 		#for calculating axis ranges
@@ -511,11 +484,10 @@ def snr_measures(premade_output = None):
 		x_values = []
 		y_values = []
 
-
 		#for s in subjects:
 		for s_index,s in enumerate(subjects):
 			print (s)
-			if premade_output ==None: 
+			if premade_output ==None:
 				snr_accumulate = 0
 				for scan in scans:
 					roi="/space/erebus/1/users/data/preprocess/"+s+"/snr/WMROI5001_2"+studies[scan]
@@ -570,7 +542,7 @@ def snr_measures(premade_output = None):
 			axarr.plot(x, y, "o",markersize=5, c='m')
 
 			x_values.append(x)
-			y_values.append(y)	
+			y_values.append(y)
 
 			if s_index == 0: ymin_value = y
 			ymin_value = min(ymin_value,y)
@@ -582,7 +554,7 @@ def snr_measures(premade_output = None):
 
 		if key == 'Anhedonia':
 			x_1 = [g for g in x_values if g>=3]
-			x_2 = [g for g in x_values if g<3]			
+			x_2 = [g for g in x_values if g<3]
 			#regression lines
 			(sl,b) = polyfit(x_1,y_values[-len(x_1):], 1)
 			yp = polyval([sl,b],x_1)
@@ -601,7 +573,7 @@ def snr_measures(premade_output = None):
 		#GLM
 		X=np.array([])
 		if key != 'Anhedonia':
-			X  = np.ones(len(x_values))	
+			X  = np.ones(len(x_values))
 			X =np.stack((X, x_values), axis=-1)
 			cval = np.hstack((0, -1))
 		else:
@@ -613,7 +585,7 @@ def snr_measures(premade_output = None):
 			cval = np.hstack((1, -1))
 		X= np.array(X).reshape(len(y_values),2)
 		Y=np.array(y_values )
-		
+
 		model = GeneralLinearModel(X)
 		model.fit(Y)
 		z_vals = model.contrast(cval).p_value() # z-transformed statistics
@@ -625,8 +597,8 @@ def snr_measures(premade_output = None):
 		axarr.set_xlim(xmin_value-(np.median(x_values)*.30),xmax_value+(np.median(x_values)*.30))
 		axarr.set_ylim(ymin_value-(np.median(y_values)*.30),ymax_value+(np.median(y_values)*.30))
 
-
-		f.savefig("/space/erebus/1/users/vsiless/QA_plots//snr_avg_"+str(key),dpi=199)
+		f.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/snr_avg_"+str(key),dpi=199)
+		#f.savefig("/space/erebus/1/users/vsiless/QA_plots//snr_avg_"+str(key),dpi=199)
 
 
 	#plt.show()

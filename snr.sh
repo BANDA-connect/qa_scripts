@@ -1,74 +1,14 @@
 #!/bin/bash
-
-
-function ltaDiff()
-{
-	s=$1 #BANDA001 
-	setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
-	cd /space/erebus/1/users/data/preprocess/${s}/motion
+if [[ ! ${SUBJECTS_DIR} ]]; then
+       echo "ERROR: SUBJECTS_DIR missing"  
+	exit
+fi
 	
-	files=(T1.nii.gz dMRI_AP1.nii.gz dMRI_PA1.nii.gz fMRI_rest1_AP.nii.gz fMRI_rest2_PA.nii.gz dMRI_AP2.nii.gz dMRI_PA2.nii.gz fMRI_rest3_AP.nii.gz fMRI_rest4_PA.nii.gz  tfMRI_gambling1_AP.nii.gz tfMRI_gambling2_PA.nii.gz tfMRI_faceMatching1_AP.nii.gz tfMRI_faceMatching2_PA.nii.gz tfMRI_conflict1_AP.nii.gz tfMRI_conflict2_PA.nii.gz tfMRI_conflict3_AP.nii.gz tfMRI_conflict4_PA.nii.gz T2.nii.gz)
-
-	size=${#files[@]}
-
-	lta_diff ${files[1]%%.*}2T1.lta identity.nofile 7 > ${files[1]%%.*}_2_T1.lta_diff
-
-	for ((i=2;i<size;i++)); 
-	do
-		t1=${files[i]%%.*}2T1.lta
-		t2=${files[$(($i-1))]%%.*}2T1.lta 
-		tf=${files[i]%%.*}_2_${files[$(($i-1))]%%.*}.lta
-		mri_concatenate_lta -invert2 $t1 $t2 $tf
-		lta_diff $tf identity.nofile 7 > ${tf%%.*}.lta_diff
-	done
-
-}
-
-function everything2T1Motion()
-{
-	s=$1 #BANDA001 
-	setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
-	cd /space/erebus/1/users/data/preprocess/${s}
-
-	mkdir motion
-	IFS=","
-	while read scan skip niftyName protocol
-        do
-		echo $niftyName
-		echo $skip
-		echo $scan
-		echo $protocol
-		if [[ ${niftyName} != *SpinEcho* ]];
-		then
-			#string="bbregister --s $s --mov  /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz --reg  /space/erebus/1/users/data/preprocess/${s}/motion/${niftyName}2T1.lta --bold"
-			#pbsubmit -n 1  -c ${string}
-			if [[ ${niftyName} == *T1* ]];
-			then	
-				string="bbregister --s $s --mov  /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz --reg  /space/erebus/1/users/data/preprocess/${s}/motion/${niftyName}2T1.lta --t1"
-			elif [[ ${niftyName} == *T2* ]];
-			then	
-				string="bbregister --s $s --mov  /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz --reg  /space/erebus/1/users/data/preprocess/${s}/motion/${niftyName}2T1.lta --t2"
-			elif [[ ${niftyName} == *dMRI* ]];
-			then
-				string="bbregister --s $s --mov  /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz --reg  /space/erebus/1/users/data/preprocess/${s}/motion/${niftyName}2T1.lta --dti"
-			else
-				string="bbregister --s $s --mov  /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz --reg  /space/erebus/1/users/data/preprocess/${s}/motion/${niftyName}2T1.lta --bold"
-			fi
-			pbsubmit -n 1  -c ${string}
-
-		fi
-
-
-	done < dicom2nifty.csv
-	
-}
 
 function everything2T1SNR()
 {
-	s=$1 #BANDA001 
-	#setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
-	cd ${PREPROCESS_DIR}/${s} #/space/erebus/1/users/data/preprocess/${s}
-	#cd /space/erebus/1/users/data/preprocess/${s}
+	s=$1 
+	cd /space/erebus/1/users/data/preprocess/${s}
 
 	mkdir snr
 	IFS=","
@@ -107,8 +47,7 @@ function GetB0s()
 	
 	s=$1 
 	echo $s
-	#cd /space/erebus/1/users/data/preprocess/${s}
-	cd ${PREPROCESS_DIR}/${s} #/space/erebus/1/users/data/preprocess/${s}
+	cd /space/erebus/1/users/data/preprocess/${s}
 	mkdir snr
 	frame=[0 1 17 33 49 65 81]
 
@@ -121,9 +60,8 @@ function GetB0s()
 function T1aparc2all()
 {
 	s=$1 
-	#setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
-	cd ${PREPROCESS_DIR}/${s} #/space/erebus/1/users/data/preprocess/${s}
-	#cd /space/erebus/1/users/data/preprocess/${s}
+	setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
+	cd /space/erebus/1/users/data/preprocess/${s}
 
 	IFS=","
 	while read scan skip niftyName protocol
@@ -194,13 +132,13 @@ function T1aparc2all()
 function pre_compute()
 {
 	s=$1
-	#setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
-	cd ${PREPROCESS_DIR}/${s} #/space/erebus/1/users/data/preprocess/${s}
+	setenv SUBJECTS_DIR /autofs/space/erebus_001/users/data/preprocess/FS/MGH_HCP
+	cd /space/erebus/1/users/data/preprocess/${s}
 
 	#mkdir motion
 	mkdir snr	
 	IFS=","
-	while read scan skip niftyame protocol
+	while read scan skip niftyName protocol
         do
 		echo $niftyName
 		echo $skip
