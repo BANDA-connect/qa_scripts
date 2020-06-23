@@ -12,7 +12,7 @@ import os.path
 import matplotlib
 print( matplotlib.get_cachedir())
 import matplotlib.pyplot as plt
-import dicom
+#import dicom
 from numpy import linalg as LA
 from pyquaternion import Quaternion
 import matplotlib.patches as mpatches

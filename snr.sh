@@ -162,10 +162,7 @@ function pre_compute()
 
 				fscalc /space/erebus/1/users/data/preprocess/$s/snr/mean${niftyName}.nii.gz div /space/erebus/1/users/data/preprocess/$s/snr/std${niftyName}.nii.gz --o /space/erebus/1/users/data/preprocess/$s/snr/snr${niftyName}.nii.gz
 			fi	
-
-
 		fi
-
 	done < dicom2nifty.csv
 }
 function motion_measures()

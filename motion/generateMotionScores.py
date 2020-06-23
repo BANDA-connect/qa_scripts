@@ -1,6 +1,6 @@
-#author: Viviana Siless - vsiless@mgh.harvard.edu
+#author: Viviana Siless - vsiless@mgh.harvard.edu   #/space/erebus/1/users/jwang/jon2/bin/python3.6
 import sys
-import math 
+import math
 import glob
 import numpy as np
 import os.path
@@ -11,6 +11,12 @@ import dicom
 
 from numpy import linalg as LA
 from pyquaternion import Quaternion
+import matplotlib.patches as mpatches
+import csv
+import utils
+
+outliers=["BANDA051","BANDA104","BANDA131","BANDA134","BANDA129","BANDA137"]
+
 
 def readVNavsScoreFiles(s,t):
 
@@ -19,7 +25,7 @@ def readVNavsScoreFiles(s,t):
 		num=166
 	else:
 		num=111
-		
+
 	a = map(float, f.read().split(",") )
 	li=[]
 	li.extend(a)
@@ -33,10 +39,10 @@ def readVNavsScoreFiles(s,t):
 		if scores[index] > li[i]:
 			scores[index] = li[i]
 			indices[index]=i
-	
+
 	#print(indices)
 	#print(sum(indices>166))
-	return indices	
+	return indices
 
 def test_vNavsScore(vals1, vals2):
 	q1 = Quaternion(axis=[vals1[1],vals1[2],vals1[3]], angle=vals1[0])
@@ -46,12 +52,12 @@ def test_vNavsScore(vals1, vals2):
 	axis = q3.axis
 
 	t = vals1[4:] -vals2[4:]
-	
+
 	t_rotmax = 100 * np.sqrt(2-2*np.cos(angle))
 	temp=t_rotmax*LA.norm(np.asarray(t-np.dot(t,axis)*axis))
 	nav_score = np.sqrt(t_rotmax**2 + 2*temp + LA.norm(t)**2)
 	print ("score",nav_score)
-	
+
 def getvNavScore(lista):
 	vals1= lista[len(lista)-1]
 	vals2= lista[len(lista)-2]
@@ -69,8 +75,15 @@ def getvNavScore(lista):
 	return nav_score
 def vNavRead():
 	f, axarr = plt.subplots(1,2)
-	subjects = ["BANDA046","BANDA047","BANDA048","BANDA049"]
+	#subjects = ["BANDA050","BANDA051","BANDA052","BANDA053","BANDA054","BANDA055","BANDA056","BANDA057","BANDA058","BANDA059","BANDA060"]
 	#subjects = ["BANDA004","BANDA005","BANDA006","BANDA007","BANDA008","BANDA009","BANDA010","BANDA011","BANDA012","BANDA013", "BANDA014", "BANDA015"]
+	#subjects = ["BANDA092","BANDA093","BANDA094","BANDA095","BANDA096","BANDA097","BANDA098","BANDA099", "BANDA100","BANDA101","BANDA102","BANDA103","BANDA104","BANDA105","BANDA106","BANDA107","BANDA108","BANDA109", "BANDA110","BANDA111","BANDA112","BANDA113","BANDA114","BANDA115","BANDA116","BANDA117","BANDA118","BANDA119"]
+	#,"BANDA088","BANDA089","BANDA090","BANDA091",]
+	#subjects = ["BANDA138","BANDA139","BANDA140"]
+	subjects = ["BANDA091"] #,"BANDA139","BANDA140"]
+	#["BANDA126","BANDA127","BANDA128","BANDA129","BANDA130","BANDA132","BANDA133","BANDA135","BANDA136","BANDA137","BANDA138","BANDA139","BANDA140"]
+
+	#["BANDA083","BANDA084","BANDA085","BANDA086","BANDA087"]
 	for s in subjects:
 
 		dicoms = glob.glob('/space/erebus/1/users/data/dicoms/'+s+'/MR*')
@@ -94,15 +107,15 @@ def vNavRead():
 
 					vnavsT1.append(np.array([float(quat[1]),float(quat[2]),float(quat[3]),float(quat[4]),float(quat[6]),float(quat[7]),float(quat[8])]))
 					if len(vnavsT1)>1:
-						vnavsT1Score.append(getvNavScore(vnavsT1))	
+						vnavsT1Score.append(getvNavScore(vnavsT1))
 						print (vnavsT1Comms[len(vnavsT1Comms)-2] ,"vnav score:", vnavsT1Score[len(vnavsT1Score)-1])
-					vNav+=1			
+					vNav+=1
 
 				else:
 					vnavsT1.append(np.array([0.0,1.0,0.0,0.0,0.0,0.0,0.0]))
-					vnavsT1Score.append(getvNavScore(vnavsT1))	
+					vnavsT1Score.append(getvNavScore(vnavsT1))
 					print (vnavsT1Comms[len(vnavsT1Comms)-2], "vnav score:",vnavsT1Score[len(vnavsT1Score)-1])
-					vNav=0				
+					vNav=0
 
 			elif dcm.ProtocolName == 'HCP_MGH_T2w_SPC_vNav' and dcm.SequenceName=='ABCD3d1_32ns':
 				quat=dcm.ImageComments.split()
@@ -111,23 +124,23 @@ def vNavRead():
 				if int(dcm.AcquisitionNumber) >1 :
 					vnavsT2.append(np.array([float(quat[1]),float(quat[2]),float(quat[3]),float(quat[4]),float(quat[6]),float(quat[7]),float(quat[8])]))
 					if len(vnavsT2)>1:
-						vnavsT2Score.append(getvNavScore(vnavsT2))	
-					vNav2+=1			
+						vnavsT2Score.append(getvNavScore(vnavsT2))
+					vNav2+=1
 				else:
 					vnavsT2.append(np.array([0.0,1.0,0.0,0.0,0.0,0.0,0.0]))
-					vnavsT2Score.append(getvNavScore(vnavsT2))	
+					vnavsT2Score.append(getvNavScore(vnavsT2))
 					vNav2=0
-					
+
 		f = open("/space/erebus/1/users/data/preprocess/"+s+"/motion/vnavsT1Score.csv", 'w')
 		f.write(str(vnavsT1Score).replace("[","").replace("]",""))
 		f.close()
 		f = open("/space/erebus/1/users/data/preprocess/"+s+"/motion/vnavsT2Score.csv", 'w')
 		f.write(str(vnavsT2Score).replace("[","").replace("]",""))
 		f.close()
-	
+
 		print (vnavsT1Score)
 		print (vnavsT2Score)
-		print(s, "T1", sum(np.array(vnavsT1Score)>0.5))				
+		print(s, "T1", sum(np.array(vnavsT1Score)>0.5))
 		print(s, "T2", sum(np.array(vnavsT2Score)>0.5))
 
 		axarr[0].plot(range(len(vnavsT1Score)),vnavsT1Score,label=s)
@@ -137,43 +150,52 @@ def vNavRead():
 		axarr[1].plot(range(len(vnavsT2Score)),vnavsT2Score,label=s)
 		axarr[1].set_xlabel('TR (T2)')
 		axarr[1].set_ylabel('vnav score')
-	axarr[0].legend(ncol=3)	
+	axarr[0].legend(ncol=3)
 	axarr[1].legend(ncol=3)
-		
-	plt.show()
 
-def getValues(inFile, xColumn,lineIndex, acq_time,ref):
+	#plt.show()
+
+
+def getValues(inFile, xColumn,lineIndex, acq_time,ref, toMillimeters=None):
 	prevValues =[]
-	volumes=1 	
-	tra = [0,0,0]	
-	absol = [0,0,0]	
+	volumes=1
+	all_tra = [ ]
+	tra = [0,0,0]
+	absol = [0,0,0]
 	linei=0
 	iind=0
 	with open(inFile) as motionFile:
 		for line in motionFile:
 			if linei >= lineIndex[0] and linei <lineIndex[len(lineIndex)-1] :
-		
-				values =  line.split()
-				if len(prevValues )>5:
-					t=0
-					for i in range(xColumn, xColumn+3):
-						if linei == lineIndex[iind]:
-							tra[i-xColumn] += math.fabs(float(values[i])-float(prevValues[i]))
 
-					volumes +=1 				
-				if linei==ref or ref<0:				
+				values =  line.split()
+				if linei == lineIndex[iind]:
+					tra_i = [0,0,0]
+					if len(prevValues )>5:
+						for i in range(xColumn, xColumn+3):
+							if toMillimeters is None:
+								tra_i[i-xColumn] = math.fabs(float(values[i])-float(prevValues[i]))
+							else:
+								tra_i[i-xColumn] = math.fabs(float(toMillimeters(float(values[i])))-float(toMillimeters(float(prevValues[i]))))
+								#tra_i[i-xColumn] = math.fabs(float(toMillimeters(math.fabs(float(values[i])-float(prevValues[i])))))
+
+							tra[i-xColumn]+= tra_i[i-xColumn]
+						all_tra.append(tra_i) 		
+						volumes +=1
+					iind+=1
+				if linei==ref or ref<0:
 					prevValues = values
 				if linei==lineIndex[0]:
 					for i in range(xColumn, xColumn+3):
-						absol[i-xColumn]= float(values[i])			
-				iind+=1
-			if len(lineIndex) == iind:
+						absol[i-xColumn]= float(values[i])
+						#absol[i-xColumn]= tra_i[i-xColumn])
+			if lineIndex[-1] <= iind:
 				break
-			linei+=1	
-	return (tra, volumes*acq_time, absol)
+			linei+=1
+	return (tra, volumes*acq_time, np.array(absol), np.array(all_tra))
 
-def getTranslation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None):
-	
+def getTranslation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None, avg=True):
+
 	tra = getValues( inFile,xColumn,lineIndex,acq_time,ref)
 	tra2=[0,0,0]
 	if not inFile2 ==None :
@@ -182,9 +204,12 @@ def getTranslation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, line
 	else:
 		res= np.array(tra[0])/tra[1]
 
-		
-		
-	return math.sqrt(sum(res**2)) #/tra[1]
+
+	if avg:
+		print("avg tra")
+		return math.sqrt(sum(res**2)) #/tra[1]
+	else:	#this only works for within
+		return tra
 
 def getRotation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None):
 	col= 0 if xColumn == 3 else 3
@@ -199,6 +224,59 @@ def getRotation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineInd
 
 	return (sum(res*180/3.15)%180) #/rot[1]
 
+def radiansToMillimeters(value):
+	return value*50
+
+
+def getRotationMillimeters(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None, avg=True):
+	col= 0 if xColumn == 3 else 3
+
+	rot =getValues(inFile,col,lineIndex,acq_time,ref) #, radiansToMillimeters)
+	rot2=[0,0,0]
+	if not inFile2 ==None :
+		rot2 = getValues( inFile2,col,lineIndex2,acq_time,ref)
+		res = np.absolute(np.array(rot[2]) - np.array(rot2[2]))
+	else:
+		res= np.array(rot[0])/rot[1]
+	if avg:
+		print("avg")
+		return math.sqrt(sum(res**2)) #/tra[1]
+	else: #this only works for within 
+		return rot
+
+def getFD(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None, avg=False):
+	rot = getRotationMillimeters(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[3]
+	trans = getTranslation(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[3]
+	if not inFile2 ==None :
+		rot2 = getRotationMillimeters(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[3]
+		trans2 = getTranslation(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[3]
+
+		return radiansToMillimeters(sum(np.absolute(rot-rot2)))+sum(np.absolute(trans-trans2))
+
+	else:
+		c=0
+		for i in range(len(rot)):
+			val = (radiansToMillimeters(sum(rot[i])) + sum(trans[i]))
+			c+= val**2
+		print(math.sqrt(c/len(rot)))
+		return math.sqrt(c/len(rot))
+
+def getFramewiseThreashold(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None):
+	rot = getRotationMillimeters(inFile, xColumn, lineIndex, acq_time, ref,inFile2, lineIndex2,avg=False)[3]
+	trans = getTranslation(inFile, xColumn, lineIndex, acq_time, ref,inFile2, lineIndex2, avg=False)[3]
+	c=0
+
+	for i in range(len(rot)):
+		#val = math.sqrt(sum(rot[i]**2 + trans[i]**2))
+		val = (radiansToMillimeters(sum(rot[i])) + sum(trans[i]))
+		if val >.9:
+			c = 1 +c
+			#print(radiansToMillimeters(sum(rot[i])),sum(trans[i]))
+			#print(val)
+	print(c)
+	return c
+
+
 def getTranslationAbsolute(inFile, xColumn,lineIndex,acq_time,ref=0):
 	return getTranslation( inFile,xColumn,lineIndex,acq_time,ref)
 
@@ -210,6 +288,12 @@ def getFileData(fileN):
 	if "dMRI" in fileN:
 		column =0
 		acq_time=3.230
+	elif "T1" in fileN:
+		column=3
+		acq_time=2.400
+	elif "T2" in fileN:
+		column=3
+		acq_time=3.200
 	else:
 		column =3
 		acq_time=.8
@@ -226,65 +310,108 @@ def getFilePath(fileN,s):
 
 
 
+
+# output=csv.writer(open('/space/erebus/1/users/data/scores/new/motion_within_scan_output_subj1,140.csv','w+'))
 def plotWithinScanMotion():
+	output=csv.writer(open('/space/erebus/1/users/data/scores/motion_within_scan_FD_output_140.csv','w+'))
+	output.writerow(['subject','rot_trans','scan_type','score'])
+
 	scans.append("T1 all vnavs - no reacq")
 	scans.append("T2 all vnavs - no reacq")
+
+	# outliers=["BANDA141","BANDA142","BANDA143"]
+
+	subjects, subjects_lbl = utils.getBandaLabels(outliers)
+
 	for m in metric:
-		f, axarr = plt.subplots(4, 5)
-		f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
-		num=0
-		for name  in scans:
-			fileN = studies[name.split()[0]]
-			i=num%4
-			j=int(num/4)
-			
-			column,acq_time = getFileData(fileN)
-			if "no vnavs" in name:
-				if "T1" in name :
-					index=[0,166]
-				else:
-					index=[0,111]
-			else:
-				index=[0,1000]
-			if "dMRI" in fileN:
-				index =diffusion[i]
-				
-			axarr[i,j].set_title(name)
-			#for s in subjects:
-			for s_index,s in enumerate(subjects):				
-				f = getFilePath(fileN,s)
-				if f != None : 
-					print (name)
-					if "T1" == name:
-						ind = readVNavsScoreFiles(s, "T1")
-					elif "T2" == name:
-						ind = readVNavsScoreFiles(s, "T2")
-						#print(s, ind)
+			fg, axarr = plt.subplots(4, 5)
+			fg.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
+			num=0
+			for name  in scans:
+					fileN = studies[name.split()[0]]
+					i=num%4
+					j=int(num/4)
+
+					column,acq_time = getFileData(fileN)
+					if "no vnavs" in name:
+							if "T1" in name :
+									index=[0,166]
+							else:
+									index=[0,111]
 					else:
-						ind = range(index[0], index[1])
-					
-					t=  m(f,column,np.sort(ind),acq_time)
-					#c='C'+str(s_index%10) <-- color cycles by subject name (10 colors)
-					axarr[i,j].plot(subjects.index(s)+1, t, "o",c='C'+str(s_index%10))
+							index=[0,1000]
+					if "dMRI" in fileN:
+							index =diffusion[i]
 
-			if j==0:
-				axarr[i,j].set_ylabel(metric_label[metric.index(m)])
-			if i==3:
-				axarr[i,j].set_xlabel('Subject')
+					axarr[i,j].set_title(name)
+					#for s in subjects:
+					for s_index,s in enumerate(subjects_lbl['allsubjects']):
+							f = getFilePath(fileN,s)
+							if f != None :
+									print (name)
+									if "T1" == name:
+										ind = readVNavsScoreFiles(s, "T1")
+										#print(np.sort(ind)	)
+									elif "T2" == name:
+										ind = readVNavsScoreFiles(s, "T2")
+										#print(np.sort(ind))
+									else:
+										#print("hola")
+										ind = range(index[0], index[1])
 
-			if metric.index(m) >1 :
-				axarr[i,j].set_ylim((-.1,7))
-			else:
-				axarr[i,j].set_ylim((-.1,1))
-			axarr[i,j].axvline(14.5, color='k', linestyle='--')
-			axarr[i,j].set_xticks(range(1,len(subjects)+1),2)
-			num+=1
+									t=  m(f,column,np.sort(ind),acq_time)
+									#axarr[i,j].plot(subjects.index(s)+1, t, "o",c='C'+str(s_index%10))
+									output.writerow([s,m,name,t])
+									#color by subject type
+									if s in subjects_lbl['control']:
+											axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='r')
+									elif s in subjects_lbl['anx']:
+											axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='c')
+									elif s in subjects_lbl['dep']:
+											axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='y')
 
+
+
+					if j==0:
+							axarr[i,j].set_ylabel(metric_label[metric.index(m)])
+					if i==3:
+							axarr[i,j].set_xlabel('Subject')
+
+					if metric.index(m) >1 :
+							axarr[i,j].set_ylim((-.1,7))
+					else:
+							axarr[i,j].set_ylim((-.1,1))
+					axarr[i,j].axvline(14.5, color='k', linestyle='--')
+					axarr[i,j].set_xticks(range(1,len(subjects)+1),20)
+					num+=1
+
+					control_patch = mpatches.Patch(color='r', label='control')
+					anxious_patch = mpatches.Patch(color='c', label='anxious')
+					depressed_patch = mpatches.Patch(color='y', label='depressed')
+
+					axarr[i,j].legend(handles=[control_patch,anxious_patch,depressed_patch])
+			#fg.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_within_scan_patvscontrol"+m,dpi=199)
 	plt.show()
+
+
 def plotBetweenScanMotion():
-	for m in metric[0:2]:
-		f, axarr = plt.subplots(3,4)
-		f.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
+	#output=csv.writer(open('/space/erebus/1/users/data/scores/motion_between_scan_output.csv','w+'))
+	#output.writerow(['subject','rot_trans','scan_type','score'])
+
+	output=csv.writer(open('/space/erebus/1/users/data/scores/_motion_between_scan_FD_output_140.csv','w+'))
+	output.writerow(['subject','rot_trans','scan_type','score'])
+
+	scans.append("T1 all vnavs - no reacq")
+	scans.append("T2 all vnavs - no reacq")
+
+	# outliers=["BANDA141","BANDA142","BANDA143"]
+
+	subjects, subjects_lbl = utils.getBandaLabels(outliers)
+
+
+	for m in metric:
+		fg, axarr = plt.subplots(3,4)
+		fg.subplots_adjust(left=.03, bottom=.06, right=.97, top=.95, wspace=.18, hspace=.28)
 		num=0
 		#for name1, name2  in pairsOfStudies.items():
 		for a in range(len(pairsOfStudies)):
@@ -293,12 +420,14 @@ def plotBetweenScanMotion():
 			i=num%3
 			j=int(num/3)
 			axarr[i,j].set_title(name1+"_"+name2)
+			name="%s_%s" % (name1, name2)
 
-			#for s in subjects:
-			for s_index,s in enumerate(subjects):			
+			y_values = []
+
+			for s_index,s in enumerate(subjects_lbl['allsubjects']):
 				column,acq_time = getFileData(studies[name1])
 
-				if "Diffusion" in name1:	
+				if "Diffusion" in name1:
 					f1 = getFilePath(studies[name1],s)
 					f2 = getFilePath(studies[name2],s)
 					ind1=indexPerDiffusion[name1]
@@ -308,43 +437,64 @@ def plotBetweenScanMotion():
 					f1 = getFilePath("/motion/structural_motion.nii.gz.par",s)
 					f2 = getFilePath("/motion/structural_motion.nii.gz.par",s)
 					ind1=0,1
-					ind2=1,2	
+					ind2=1,2
 				else:
 					f1 = getFilePath("/motion/fmriFirsts_motion.nii.gz.par",s)
 					f2 = getFilePath("/motion/fmriFirsts_motion.nii.gz.par",s)
 					ind1=fmri_order[name1],	fmri_order[name1]+1
-					ind2=fmri_order[name2],fmri_order[name2]+1	
- 
+					ind2=fmri_order[name2],fmri_order[name2]+1
+
 				if f1 != None and f2 != None :
 					t=  m(f1,column, ind1,acq_time,0,f2, ind2) #/acq_time
-					axarr[i,j].plot(subjects.index(s)+1, t, "o",c='C'+str(s_index%10))
+					y_values.append(t)
+					#axarr[i,j].plot(subjects.index(s)+1, t, "o",c='C'+str(s_index%10))
+					output.writerow([s,m,name,t])
+					#color by subject type
+					if s in subjects_lbl['control']:
+						axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='r')
+					elif s in subjects_lbl['anx']:
+						axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='c')
+					elif s in subjects_lbl['dep']:
+						axarr[i,j].plot(subjects_lbl['allsubjects'].index(s)+1, t, "o", c='y')
 
 			if j==0:
 				axarr[i,j].set_ylabel(metric_label[metric.index(m)])
 			if i==2:
 				axarr[i,j].set_xlabel('Subject')
 
-			#	axarr[i,j].set_ylim((-.1,))
+			#axarr[i,j].axvline(14.5, color='k', linestyle='--')
+			axarr[i,j].set_xticks(range(1,len(subjects)+1),20)
+			#axarr[i,j].set_xticklabels(np.arange(1,len(subjects)+1,20))
+
 
 			num+=1
-			axarr[i,j].set_xticks(range(1,len(subjects)+1,2))
-			axarr[i,j].axvline(14.5, color='k', linestyle='--')
-
 
 			#if metric.index(m)==1 :
-			axarr[i,j].set_ylim((-.1,10))
-		
-	plt.show()
-	
+			if max(y_values)<10:
+				axarr[i,j].set_ylim(-.1,max(y_values)+1)
+			control_patch = mpatches.Patch(color='r', label='control')
+			anxious_patch = mpatches.Patch(color='c', label='anxious')
+			depressed_patch = mpatches.Patch(color='y', label='depressed')
+
+			axarr[i,j].legend(handles=[control_patch,anxious_patch,depressed_patch])
+
+
+		plt.show()
+		#fg.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_between_scan_patvscontrol",dpi=199)
+
 def plotLTAMovement():
-	f, axarr = plt.subplots(1,2)
-	
+
+	subjects, subjects_lbl = utils.getBandaLabels(outliers)
+
+	fg, axarr = plt.subplots(1,2)
+
 	files=['dMRI_AP1_2_T1.lta_diff' ,'dMRI_PA1_2_dMRI_AP1.lta_diff', 		'fMRI_rest1_AP_2_dMRI_PA1.lta_diff','fMRI_rest2_PA_2_fMRI_rest1_AP.lta_diff' ,'dMRI_AP2_2_fMRI_rest2_PA.lta_diff','dMRI_PA2_2_dMRI_AP2.lta_diff','fMRI_rest3_AP_2_dMRI_PA2.lta_diff' ,
 	'fMRI_rest4_PA_2_fMRI_rest3_AP.lta_diff', 'tfMRI_gambling1_AP_2_fMRI_rest4_PA.lta_diff','tfMRI_gambling2_PA_2_tfMRI_gambling1_AP.lta_diff','tfMRI_faceMatching1_AP_2_tfMRI_gambling2_PA.lta_diff',
 	'tfMRI_faceMatching2_PA_2_tfMRI_faceMatching1_AP.lta_diff','tfMRI_conflict1_AP_2_tfMRI_faceMatching2_PA.lta_diff','tfMRI_conflict2_PA_2_tfMRI_conflict1_AP.lta_diff',
 	'tfMRI_conflict3_AP_2_tfMRI_conflict2_PA.lta_diff','tfMRI_conflict4_PA_2_tfMRI_conflict3_AP.lta_diff' ,'T2_2_tfMRI_conflict4_PA.lta_diff']
 
 	labels=['T1','dMRI1','dMRI2','fMRI1','fMR2','dMRI3','dMRI4','fMRI3','fMRI4','gambling1','gambling2','faceMatching1','faceMatchin2', 'conflict1', 'conflict2','conflict3', 'conflict4', 'T2']
+
 	for s in subjects:
 		angles=[]
 		trans=[]
@@ -356,7 +506,7 @@ def plotLTAMovement():
 
 				if "AbsTrans" in line:
 					trans.append(line.split()[2])
-				
+
 		axarr[0].plot(angles,label=s)
 		axarr[0].set_xlabel('scans')
 		axarr[0].set_ylabel('angle')
@@ -376,14 +526,8 @@ def plotLTAMovement():
 	plt.setp(axarr, xticks=range(len(labels)), xticklabels=labels2)
 	matplotlib.pyplot.sca(axarr[0])
 	plt.xticks(rotation=90)
-		#
-	plt.show()
-
-subjects = [ "BANDA001", "BANDA002","BANDA003","BANDA004","BANDA005","BANDA006","BANDA007","BANDA008","BANDA009","BANDA010","BANDA011","BANDA012","BANDA013", "BANDA014", "BANDA015", "BANDA016", "BANDA017","BANDA018","BANDA019","BANDA020","BANDA021","BANDA022","BANDA023","BANDA024","BANDA025","BANDA026","BANDA027","BANDA028","BANDA029","BANDA030","BANDA031","BANDA032","BANDA033",
-"BANDA034","BANDA035","BANDA036","BANDA037","BANDA038","BANDA039","BANDA040","BANDA041","BANDA042","BANDA043","BANDA044","BANDA045","BANDA046","BANDA047","BANDA048","BANDA049"]
-#subjects = [ "BANDA022","BANDA023","BANDA024","BANDA025","BANDA026","BANDA027","BANDA028"]
-#subjects = ["BANDA022","BANDA023","BANDA024","BANDA025","BANDA026","BANDA027"]
-#subjects = ["BANDA006, BANDA007","BANDA027"]
+	# plt.show()
+	fg.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_LTA_movement_patvscontrol",dpi=199)
 
 studies = {'Diffusion1': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion2': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion3': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion4':
 'dMRI_topup_eddy.nii.gz.eddy_parameters','Rest1': 'fMRI_rest1_AP_motion.nii.gz.par','Rest2': 'fMRI_rest2_PA_motion.nii.gz.par','Rest3': 'fMRI_rest3_AP_motion.nii.gz.par','Rest4':
@@ -394,11 +538,13 @@ studies = {'Diffusion1': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion2': 
 
 scans=['Diffusion1','Diffusion2','Diffusion3','Diffusion4','Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1',
 'T2']
+#scans=['T1', 'T2']
 
 diffusion=[ [0,98], [98,196],[196,295],[295,394]]
 
-metric = [getTranslation, getRotation] #, getTranslationAbsolute, getRotationAbsolute]
-metric_label=["Translation (mm/s)" , "Rotation ($\degree/s$)", "Absolute translation per second", "Absolute rotation per second"]
+metric = [getFramewiseThreashold, getFD,  getTranslation, getRotation] #, getFD] #, getTranslationAbsolute, getRotationAbsolute]
+#metric = [ getTranslation, getRotation] #, getFD] #, getTranslationAbsolute, getRotationAbsolute]
+metric_label=["FDT","FD","Rotation ($\degree/s$)", "Absolute translation per second", "Absolute rotation per second",]
 
 pairsOfStudies = {'Diffusion1':'Diffusion2','Diffusion2':'Diffusion3','Diffusion3':'Diffusion4',
 'Rest1':'Rest2','Rest2':'Rest3','Rest3':'Rest4','Gambling1':'Gambling2','FaceMatching1':'FaceMatching2','Conflict1':'Conflict2','Conflict2':'Conflict3', 'Conflict3':'Conflict4'}
@@ -409,11 +555,12 @@ indexPerDiffusion = {'Diffusion1':[0,98], 'Diffusion2':[98,196], 'Diffusion3':[1
 fmri_order = {'Rest1':0,'Rest2':1,'Rest3':2,'Rest4':3,'Gambling1':4,'Gambling2':5, 'FaceMatching1':6,'FaceMatching2':7, 'Conflict1':8,'Conflict2':9,'Conflict3':10,'Conflict4':11}
 
 #vNavRead()
-
 #plotLTAMovement()
 #test_vNavsScore()
 #plotWithinScanMotion()
 plotBetweenScanMotion()
+#readVNavsScoreFiles()
+
 """
 vals0=np.array([0,1,0,0,0,0,0 ])
 vals1=np.array([-0.0010, -0.7937, -0.3014, -0.5284, 0.00, -0.03, 0.05 ])
@@ -438,7 +585,7 @@ test_vNavsScore(vals8,vals9)
 
 
 vals1=np.array([-0.0066, -0.7290, 0.5318, 0.4309, 0.54 ,0.33 ,0.04])
-vals2=np.array([-0.0079 ,-0.8237 ,0.2869, 0.4892 ,0.50, 0.23, 0.10]) 
+vals2=np.array([-0.0079 ,-0.8237 ,0.2869, 0.4892 ,0.50, 0.23, 0.10])
 vals3=np.array([ -0.0069 ,-0.8022, 0.3268, 0.4996,   0.52, 0.32 ,-0.06])
 vals4=np.array([ -0.0086, -0.8320, 0.3709, 0.4126, 0.54 ,0.29 ,0.11])
 vals5=np.array([-0.0073, -0.7824, 0.2467, 0.5718 , 0.46 ,0.34 ,-0.08])
@@ -451,4 +598,3 @@ test_vNavsScore(vals4,vals5)
 test_vNavsScore(vals5,vals6)
 test_vNavsScore(vals6,vals7)
 """
-#readVNavsScoreFiles()

@@ -82,13 +82,13 @@ function everything2T1SNR()
 			file=${niftyName}.nii.gz
 			if [[ ${niftyName} == *T1* ]];
 			then			
-				file=/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz
-				bet /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz ${file}
+				file=${niftyName}_brain.nii.gz
+				bet ${niftyName}.nii.gz ${file}
 				type=t1	
 			elif [[ ${niftyName} == *T2* ]];
 			then	
-				file=/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz
-				bet /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz ${file}
+				file=${niftyName}_brain.nii.gz
+				bet ${niftyName}.nii.gz ${file}
 				type=t2
 			elif [[ ${niftyName} == *dMRI* ]];
 			then
@@ -96,7 +96,7 @@ function everything2T1SNR()
 			else
 				type=bold
 			fi
-			bbregister --s $s --mov ${file}  --reg  /space/erebus/1/users/data/preprocess/${s}/snr/${niftyName}2T1.lta --${type}
+			bbregister --s $s --mov ${file}  --reg  snr/${niftyName}2T1.lta --${type}
 		fi
 
 	done < dicom2nifty.csv
@@ -139,13 +139,13 @@ function T1aparc2all()
 			file=${niftyName}.nii.gz
 			if [[ ${niftyName} == *T1* ]];
 			then			
-				file=/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz
-				bet /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz ${file}
+				file=${niftyName}_brain.nii.gz
+				bet ${niftyName}.nii.gz ${file}
 				type=t1	
 			elif [[ ${niftyName} == *T2* ]];
 			then	
-				file=/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz
-				bet /space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz ${file}
+				file=${niftyName}_brain.nii.gz
+				bet ${niftyName}.nii.gz ${file}
 				type=t2
 			elif [[ ${niftyName} == *dMRI* ]];
 			then
@@ -153,16 +153,16 @@ function T1aparc2all()
 			else
 				type=bold
 			fi
-			bbregister --s $s --mov ${file}  --reg  /space/erebus/1/users/data/preprocess/${s}/snr/${niftyName}2T1.lta --${type}
+			bbregister --s $s --mov ${file}  --reg  snr/${niftyName}2T1.lta --${type}
 
 
-			reg="/space/erebus/1/users/data/preprocess/${s}/snr/${niftyName}2T1.lta" 
+			reg="snr/${niftyName}2T1.lta" 
 			if [[ ${niftyName} == *T2* ]];
 			then	
-				file="/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz"
+				file="${niftyName}_brain.nii.gz"
 			elif [[ ${niftyName} == *T1* ]];
 			then
-				file="/space/erebus/1/users/data/preprocess/${s}/${niftyName}_brain.nii.gz"
+				file="${niftyName}_brain.nii.gz"
 			#elif [[ ${niftyName} == *dMRI* ]];
 			#then
 			#	file="/space/erebus/1/users/data/preprocess/${s}/dMRI_topup_eddy.nii.gz"
@@ -176,14 +176,14 @@ function T1aparc2all()
 			#	file="/space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz"
 			#	reg="/space/erebus/1/users/data/preprocess/${s}/snr/${niftyName}2T1.lta"
 			else	
-				file="/space/erebus/1/users/data/preprocess/${s}/${niftyName}.nii.gz"
-				reg="/space/erebus/1/users/data/preprocess/${s}/snr/${niftyName}2T1.lta"
+				file="${niftyName}.nii.gz"
+				reg="snr/${niftyName}2T1.lta"
 
 			fi
 
-			mri_vol2vol --mov /space/erebus/1/users/data/preprocess/FS/MGH_HCP/${s}/mri/wmparc.mgz --targ $file --o /space/erebus/1/users/data/preprocess/${s}/snr/wmparc_2${niftyName}.nii.gz --lta-inv $reg --nearest
-			mri_binarize --i /space/erebus/1/users/data/preprocess/${s}/snr/wmparc_2${niftyName}.nii.gz --o /space/erebus/1/users/data/preprocess/${s}/snr/WMROI4010_2${niftyName}.nii.gz  --match 4010 
-			mri_binarize --i /space/erebus/1/users/data/preprocess/${s}/snr/wmparc_2${niftyName}.nii.gz --o /space/erebus/1/users/data/preprocess/${s}/snr/WMROI5001_2${niftyName}.nii.gz  --match 5001 5002
+			mri_vol2vol --mov ${SUBJECTS_DIR}/${s}/mri/wmparc.mgz --targ $file --o snr/wmparc_2${niftyName}.nii.gz --lta-inv $reg --nearest
+			mri_binarize --i snr/wmparc_2${niftyName}.nii.gz --o snr/WMROI4010_2${niftyName}.nii.gz  --match 4010 
+			mri_binarize --i snr/wmparc_2${niftyName}.nii.gz --o snr/WMROI5001_2${niftyName}.nii.gz  --match 5001 5002
 
 					
 		fi
@@ -200,7 +200,7 @@ function pre_compute()
 	#mkdir motion
 	mkdir snr	
 	IFS=","
-	while read scan skip niftyame protocol
+	while read scan skip niftyName protocol
         do
 		echo $niftyName
 		echo $skip
@@ -210,19 +210,19 @@ function pre_compute()
 		then
 			if [[ ${niftyName} == *fMRI* ]];
 			then
-				mri_concat --i /space/erebus/1/users/data/preprocess/$s/${niftyName}.nii.gz --mean --o /space/erebus/1/users/data/preprocess/$s/snr/mean${niftyName}.nii.gz
-				mri_concat --i /space/erebus/1/users/data/preprocess/$s/${niftyName}.nii.gz --std --o /space/erebus/1/users/data/preprocess/$s/snr/std${niftyName}.nii.gz
-				fscalc /space/erebus/1/users/data/preprocess/$s/snr/mean${niftyName}.nii.gz div /space/erebus/1/users/data/preprocess/$s/snr/std${niftyName}.nii.gz --o /space/erebus/1/users/data/preprocess/$s/snr/snr${niftyName}.nii.gz
+				mri_concat --i ${niftyName}.nii.gz --mean --o snr/mean${niftyName}.nii.gz
+				mri_concat --i ${niftyName}.nii.gz --std --o snr/std${niftyName}.nii.gz
+				fscalc snr/mean${niftyName}.nii.gz div snr/std${niftyName}.nii.gz --o snr/snr${niftyName}.nii.gz
 			fi	
 			if [[ ${niftyName} == *dMRI* ]];
 			then
 				#echo " grep -n ^5\. $/space/erebus/1/users/data/preprocess/$s/${niftyName}.bvals\ | awk -v FS=:'{print $1-1}'"		
 				#lowblist = `grep -n ^5\. /space/erebus/1/users/data/preprocess/$s/${niftyName}.bvals\ | awk '{print $1-1}'` 
 				#mri_convert --frame lowblist /space/erebus/1/users/data/preprocess/$s/${niftyName}.nii.gz /space/erebus/1/users/data/preprocess/$s/${niftyName}_lowb.nii.gz
-				mri_concat --i /space/erebus/1/users/data/preprocess/$s/${niftyName}_lowb.nii.gz --mean --o /space/erebus/1/users/data/preprocess/$s/snr/mean${niftyName}.nii.gz
-				mri_concat --i /space/erebus/1/users/data/preprocess/$s/${niftyName}_lowb.nii.gz --std --o /space/erebus/1/users/data/preprocess/$s/snr/std${niftyName}.nii.gz
+				mri_concat --i ${niftyName}_lowb.nii.gz --mean --o snr/mean${niftyName}.nii.gz
+				mri_concat --i ${niftyName}_lowb.nii.gz --std --o snr/std${niftyName}.nii.gz
 
-				fscalc /space/erebus/1/users/data/preprocess/$s/snr/mean${niftyName}.nii.gz div /space/erebus/1/users/data/preprocess/$s/snr/std${niftyName}.nii.gz --o /space/erebus/1/users/data/preprocess/$s/snr/snr${niftyName}.nii.gz
+				fscalc snr/mean${niftyName}.nii.gz div snr/std${niftyName}.nii.gz --o snr/snr${niftyName}.nii.gz
 			fi	
 
 

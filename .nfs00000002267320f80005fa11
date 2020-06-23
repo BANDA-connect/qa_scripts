@@ -164,24 +164,7 @@ function copyDownloadedBs()
 
 	done
 }
-function movepreprocessed()
-{
-	file=$1
-	input=/space/erebus/1/users/HCPD/preprocessed_viv
-	output=/space/erebus/1/users/HCPD/preprocessed_viv2
 
-	inputFS=/autofs/space/erebus_001/users/HCPD/preprocessed_viv/FS_STRUCTURE
-	outputFS=/autofs/space/erebus_001/users/HCPD/preprocessed_viv/FS_STRUCTURE2
-	mkdir ${output}
-	mkdir ${outputFS}
-	for s in `cat ${file}`;
-	do
-                subject=${s/^M/}_V1_MR 
-		mv ${input}/${subject} ${output}/${subject}	
-		mv ${inputFS}/${subject} ${outputFS}/${subject}	
-	
-	done
-}
 function moveUnpreprocessed()
 {
 	file=$1
@@ -189,7 +172,8 @@ function moveUnpreprocessed()
 	output=/space/erebus/1/users/HCPD/unpreprocessed
 	for s in `cat ${file}`;
 	do
-                subject=${s/^M/}_V1_MR 
+
+                subject=${s/^M/}_V1_MR                                                                                                     
 		mv ${input}/${subject} ${output}/${subject}	
 	done
 }

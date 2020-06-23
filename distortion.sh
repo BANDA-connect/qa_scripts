@@ -18,7 +18,7 @@ function distortion_CMRR()
 	pa_ap_file=${name}_PA_AP.nii.gz
 	image_corrected=${name}_topup.nii.gz
 	folder=/space/erebus/1/users/data
-	out_folder=${SUBJECTS_DIR}/${s}/ 
+	out_folder=${PREPROCESS_DIR}/${s}/ 
 	#${protocol}
 
 	if  [ "${mri}" = "dMRI"  ]; then
@@ -70,19 +70,19 @@ function distortion_CMRR()
 	rm ${out_folder}/${pa_ap_file}
 	fslmerge -t ${out_folder}/${pa_ap_file} ${out_folder}/${pa_file} ${out_folder}/${ap_file}
 #	 --subsamp=1 
-	topup --imain=${out_folder}/${pa_ap_file} --datain=${SUBJECTS_DIR}/datains/datain_${mri}_${protocol}.txt --out=${out_folder}/${name}_topup_results --iout=${out_folder}/${name}_itopup_results --config=b02b0.cnf --fout=${out_folder}/${name}_ftopup_results
+	topup --imain=${out_folder}/${pa_ap_file} --datain=${PREPROCESS_DIR}/datains/datain_${mri}_${protocol}.txt --out=${out_folder}/${name}_topup_results --iout=${out_folder}/${name}_itopup_results --config=b02b0.cnf --fout=${out_folder}/${name}_ftopup_results
 
 
 	#register image to the corresponding distortion map
 	if  [ "${mri}" = "fMRI"  ]; then
 		mcflirt -in ${out_folder}/${image} -reffile ${out_folder}/${refvol} -out ${out_folder}/${image_motion} -spline_final -plots 
 	
-		applytopup --imain=${out_folder}/${image_motion}  --topup=${out_folder}/${name}_topup_results --method=jac --datain=${SUBJECTS_DIR}/datains/datain_${mri}_${protocol}.txt --inindex=${ind} --out=${out_folder}/${image%${remove}}_topup.nii.gz
+		applytopup --imain=${out_folder}/${image_motion}  --topup=${out_folder}/${name}_topup_results --method=jac --datain=${PREPROCESS_DIR}/datains/datain_${mri}_${protocol}.txt --inindex=${ind} --out=${out_folder}/${image%${remove}}_topup.nii.gz
 
 
 	else		
 		
-		image_eddy=${name}_topup_eddy.nii.gz
+		image_eddy=${name}_topup_eddymp.nii.gz
 		brain=${out_folder}/${name}_brain.nii.gz
 
 		#bet ${out_folder}/${pa_ap_corrected} ${out_folder}/${pa_ap_brain} -m -f 0.15
@@ -100,7 +100,7 @@ function distortion_CMRR()
 		fslroi ${out_folder}/${name}_itopup_results.nii.gz ${brain} 0 1
 		bet ${brain} ${brain} -m -f 0.15
 
-		string="eddy --imain=${out_folder}/${image} --mask=${brain} --acqp=${SUBJECTS_DIR}/datains/datain_${mri}_${protocol}.txt --index=${out_folder}/index.txt --bvecs=${out_folder}/${bvecs} --bvals=${out_folder}/${bvals} --topup=${out_folder}/${name}_topup_results --out=${out_folder}//${image_eddy}"
+		string="/usr/pubsw/packages/fsl/6.0.0/bin/eddy_openmp --imain=${out_folder}/${image} --mask=${brain} --acqp=${PREPROCESS_DIR}/datains/datain_${mri}_${protocol}.txt --index=${out_folder}/index.txt --bvecs=${out_folder}/${bvecs} --bvals=${out_folder}/${bvals} --topup=${out_folder}/${name}_topup_results --out=${out_folder}//${image_eddy} --cnr_maps "
 
 		echo ${string}
 		${string}

@@ -196,8 +196,8 @@ function distortionCorrection()
 	fi	
 
 #DIFFUSION
-#${cluster} bash ${scriptFolder}/distortion.sh distortion_CMRR CMRR dMRI $s dMRI.nii.gz dMRI_AP.nii.gz dMRI_PA.nii.gz AP bvecs bvals ${numRefDiff}
-#:<<ALL_FUNCTIONAL	
+${cluster} bash ${scriptFolder}/distortion.sh distortion_CMRR CMRR dMRI $s dMRI.nii.gz dMRI_AP.nii.gz dMRI_PA.nii.gz AP bvecs bvals ${numRefDiff}
+:<<ALL_FUNCTIONAL	
 	${cluster} bash ${scriptFolder}/distortion.sh distortion_CMRR CMRR fMRI $s fMRI_rest1_AP.nii.gz fMRI_SpinEchoFieldMap_PA_1.nii.gz fMRI_SpinEchoFieldMap_AP_1.nii.gz AP ${numRef}
 	${cluster} bash ${scriptFolder}/distortion.sh distortion_CMRR CMRR fMRI $s fMRI_rest2_PA.nii.gz fMRI_SpinEchoFieldMap_PA_1.nii.gz fMRI_SpinEchoFieldMap_AP_1.nii.gz PA ${numRef}
 
@@ -221,7 +221,7 @@ function distortionCorrection()
 		${cluster} bash ${scriptFolder}/distortion.sh distortion_CMRR CMRR fMRI $s tfMRI_gambling2_PA.nii.gz fMRI_SpinEchoFieldMap_PA_3.nii.gz fMRI_SpinEchoFieldMap_AP_3.nii.gz PA ${numRef}
 
 	fi
-#ALL_FUNCTIONAL
+ALL_FUNCTIONAL
 
 }
 
@@ -463,9 +463,9 @@ function motion()
 function snr()
 {
         s=$1	
-	cp /space/erebus/1/users/data/preprocess/BANDA001/dicom2nifty.csv ${PREPROCESS_DIR}/${s}/	
-	bash ${scriptFolder}/motion.sh pre_compute $s
+	/space/erebus/1/users/data/preprocess/BANDA100/dicom2nifty.csv ${PREPROCESS_DIR}/${s}/	
 	bash ${scriptFolder}/motion.sh GetB0s $s
+	bash ${scriptFolder}/motion.sh pre_compute $s
 	bash ${scriptFolder}/motion.sh T1aparc2all $s
 
 	bash ${scriptFolder}/motion.sh everything2T1SNR $s
@@ -474,8 +474,8 @@ function FS()
 {
 	s=$1
 	if [[ ${SUBJECTS_DIR} ]]  && [[ ${PREPROCESS_DIR} ]]; then
-		#recon-all -subject ${s} -i ${PREPROCESS_DIR}/${s}/T1.nii.gz -T2 ${PREPROCESS_DIR}/${s}/T2.nii.gz -T2pial -all
-		recon-all -subject ${s} -T2 ${PREPROCESS_DIR}/${s}/T2.nii.gz -T2pial -all  -no-isrunning
+		recon-all -subject ${s} -i ${PREPROCESS_DIR}/${s}/T1.nii.gz -T2 ${PREPROCESS_DIR}/${s}/T2.nii.gz -T2pial -all
+		#recon-all -subject ${s} -T2 ${PREPROCESS_DIR}/${s}/T2.nii.gz -T2pial -all  -no-isrunning
 	else
 		echo "missing SUBJECTS_DIR or PREPROCESS_DIR"
 	fi
@@ -484,34 +484,153 @@ function FS()
 
 function prepFSFast()
 {
-	fcseed-config -segid 1026 -fcname lh.rostalcingulate.dat -fsd rest -mean -cfg mean.lh.rostalcingulate.config -overwrite	
-	fcseed-config -segid 2026 -fcname rh.rostalcingulate.dat -fsd rest -mean -cfg mean.rh.rostalcingulate.config -overwrite
+
+	cd ${SUBJECTS_DIR}/
+	fcseed-config -segid 2010 -fcname lh.isthmuscingulate.dat -fsd rest -mean -cfg mean.lh.isthmuscingulate.config -overwrite	
+	fcseed-config -segid 1010 -fcname rh.isthmuscingulate.dat -fsd rest -mean -cfg mean.rh.isthmuscingulate.config -overwrite	
+	fcseed-config -segid 1010 -segid 2010 -fcname mni.isthmuscingulate.dat -fsd rest -mean -cfg mean.isthmuscingulate.config -overwrite	
 
 	fcseed-config -wm -fcname wm.dat -fsd rest -pca -cfg wm.config -overwrite
 	fcseed-config -vcsf -fcname vcsf.dat -fsd rest -pca -cfg vcsf.config -overwrite
 	
-	mkanalysis-sess -analysis fc.rhrccseed.surf.rh -surface fsaverage rh -fwhm 5 -notask -taskreg rh.rostalcingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 800 -per-run -overwrite 
-	mkanalysis-sess -analysis fc.lhrccseed.surf.lh -surface fsaverage lh -fwhm 5 -notask -taskreg lh.rostalcingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 800 -per-run -overwrite
+	mkanalysis-sess -analysis fc.isthmcseed.surf.lh -surface fsaverage lh -fwhm 5 -notask -taskreg lh.isthmuscingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 0.8 -per-run -overwrite
+	mkanalysis-sess -analysis fc.isthmcseed.surf.rh -surface fsaverage rh -fwhm 5 -notask -taskreg rh.isthmuscingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 0.8 -per-run -overwrite
+
+	mkanalysis-sess -analysis fc.isthmcseed.mni305 -mni305 2 -fwhm 5 -notask -taskreg mni.isthmuscingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 0.8 -per-run -overwrite
 }
 function runFSFast()
 {
-	cd ${SUBJECTS_DIR}
 	s=$1
+	cd ${SUBJECTS_DIR}/
+	echo ${SUBJECTS_DIR}
+	echo ${s}
+
 	preproc-sess -s ${s} -fsd rest -stc up -surface fsaverage lhrh -mni305 -fwhm 5 -per-run
-	fcseed-sess  -s ${s} -cfg mean.lh.rostalcingulate.config 
-	fcseed-sess  -s ${s} -cfg mean.rh.rostalcingulate.config 
+	fcseed-sess  -s ${s} -cfg mean.lh.isthmuscingulate.config  -overwrite 
+	fcseed-sess  -s ${s} -cfg mean.rh.isthmuscingulate.config  -overwrite 
+	fcseed-sess  -s ${s} -cfg mean.isthmuscingulate.config  -overwrite 
 
-	fcseed-sess -s ${s} -cfg wm.config 
-	fcseed-sess -s ${s} -cfg vcsf.config 
-
-	selxavg3-sess -s ${s} -a fc.rhrccseed.surf.rh -per-run
-	selxavg3-sess -s ${s} -a fc.lhrccseed.surf.lh -per-run
+	fcseed-sess -s ${s} -cfg wm.config  -overwrite
+	fcseed-sess -s ${s} -cfg vcsf.config  -overwrite
+	
+	selxavg3-sess -s ${s} -a fc.isthmcseed.surf.lh  #-per-run
+	selxavg3-sess -s ${s} -a fc.isthmcseed.surf.rh  #-per-run
+	selxavg3-sess -s ${s} -a fc.isthmcseed.mni305  #-per-run
+	
+	#mkanalysis-sess -analysis ${conf}/fc.rhrccseed.surf.rh -surface fsaverage rh -fwhm 5 -notask -taskreg ${conf}/rh.rostalcingulate.dat 1 -nuisreg ${conf}/vcsf.dat 5 -nuisreg ${conf}/wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 0.8 -per-run -overwrite 
+	#fcseed-sess  -s ${s} -cfg rh.rostalcingulate.config  -overwrite
+	#mkanalysis-sess -analysis fc.lhrccseed.surf.lh -surface fsaverage lh -fwhm 5 -notask -taskreg lh.rostalcingulate.dat 1 -nuisreg vcsf.dat 5 -nuisreg wm.dat 5  -mcextreg -polyfit 5 -nskip 4 -fsd rest -TR 0.8 -per-run -overwrite
+	#selxavg3-sess -s ${s} -a ${comf}/fc.rhrccseed.surf.rh -per-run
+	#fcseed-config -segid 2026 -fcname rh.rostalcingulate.dat -fsd rest -mean -cfg ${conf}/mean.rh.rostalcingulate.config -overwrite
 }
 
+function FSFastGA()
+{
+	fileName=$1
+	
+	#isxconcat-sess
+	string="-s HCD0026119_V1_MR -s HCD0114419_V1_MR -s HCD0128935_V1_MR -s HCD0182941_V1_MR -s HCD0504735_V1_MR -s HCD0514738_V1_MR -s HCD0541539_V1_MR -s HCD0643345_V1_MR -s HCD0848060_V1_MR -s HCD1039032_V1_MR -s HCD1106728_V1_MR -s HCD1205326_V1_MR -s HCD1227134_V1_MR -s HCD1411935_V1_MR -s HCD1435646_V1_MR -s HCD1441540_V1_MR -s HCD1452848_V1_MR -s HCD1464451_V1_MR -s HCD1504437_V1_MR -s HCD1527045_V1_MR -s HCD1560851_V1_MR -s HCD1630139_V1_MR -s HCD1681257_V1_MR -s HCD1783366_V1_MR -s HCD1871969_V1_MR -s HCD1872971_V1_MR -s HCD1881164_V1_MR -s HCD1886477_V1_MR -s HCD1900142_V1_MR"
+	isxconcat-sess ${string} -analysis fc.isthmcseed.surf.lh -all-contrasts -o control_group_29
+
+	isxconcat-sess ${string} -analysis fc.isthmcseed.mni305 -all-contrasts -o control_group_29
+
+	isxconcat-sess ${string} -analysis fc.isthmcseed.surf.rh -all-contrasts -o control_group_29
+
+<<hola
+ -d . -analysis fc.lhrccseed.surf.lh -all-contrasts -o controls
+	isxconcat-sess -s HCD0026119_V1_MR -s HCD0114419_V1_MR -s HCD0128935_V1_MR -s HCD0182941_V1_MR -s HCD0504735_V1_MR -s HCD0514738_V1_MR -s HCD0541539_V1_MR -s HCD0643345_V1_MR -s HCD0848060_V1_MR -s HCD1039032_V1_MR -s HCD1106728_V1_MR -s HCD1205326_V1_MR -s HCD1227134_V1_MR -s HCD1411935_V1_MR -s HCD1435646_V1_MR -s HCD1441540_V1_MR -s HCD1452848_V1_MR -s HCD1464451_V1_MR -s HCD1504437_V1_MR -s HCD1527045_V1_MR -s HCD1560851_V1_MR -s HCD1630139_V1_MR -s HCD1681257_V1_MR -s HCD1783366_V1_MR -s HCD1871969_V1_MR -s HCD1872971_V1_MR -s HCD1881164_V1_MR -s HCD1886477_V1_MR -s HCD1900142_V1_MR  -s HCD1957171_V1_MR -s HCD1978987_V1_MR -s HCD2046943_V1_MR -s HCD2063034_V1_MR -s HCD2064440_V1_MR -s HCD2109638_V1_MR -s HCD2140127_V1_MR -s HCD2335344_V1_MR -s HCD2340640_V1_MR -s HCD2400026_V1_MR -s HCD2400632_V1_MR -s HCD2748672_V1_MR -s HCD2754061_V1_MR -s HCD2768981_V1_MR -s HCD2901654_V1_MR -analysis fc.isthmcseed.surf.lh -all-contrasts -o control_group_44
+
+hola
+
+}
+
+function FSFastGABANDA()
+{
+
+	string="-s HCD0026119_V1_MR -s HCD0114419_V1_MR -s HCD0128935_V1_MR -s HCD0182941_V1_MR -s HCD0504735_V1_MR -s HCD0514738_V1_MR -s HCD0541539_V1_MR -s HCD0643345_V1_MR -s HCD0848060_V1_MR -s HCD1039032_V1_MR -s HCD1106728_V1_MR -s HCD1205326_V1_MR -s HCD1227134_V1_MR -s HCD1411935_V1_MR -s HCD1435646_V1_MR -s HCD1441540_V1_MR -s HCD1452848_V1_MR -s HCD1464451_V1_MR -s HCD1504437_V1_MR -s HCD1527045_V1_MR -s HCD1560851_V1_MR -s HCD1630139_V1_MR -s HCD1681257_V1_MR -s HCD1783366_V1_MR -s HCD1871969_V1_MR -s HCD1872971_V1_MR -s HCD1881164_V1_MR -s HCD1886477_V1_MR -s HCD1900142_V1_MR -s BANDA002  -s BANDA050 -s BANDA003  -s BANDA058 -s BANDA004  -s BANDA061 -s BANDA008  -s BANDA071 -s BANDA009  -s BANDA078 -s BANDA010  -s BANDA087 -s BANDA011  -s BANDA105 -s BANDA012  -s BANDA107 -s BANDA013  -s BANDA117  -s BANDA014  -s BANDA122 -s BANDA016  -s BANDA124 -s BANDA018  -s BANDA128 -s BANDA033  -s BANDA136 -s BANDA043  -s BANDA140 -s BANDA046"
+
+
+	isxconcat-sess ${string} -analysis fc.isthmcseed.surf.lh -all-contrasts -o HCD_BANDA
+
+	isxconcat-sess ${string} -analysis fc.isthmcseed.mni305 -all-contrasts -o HCD_BANDA
+
+	isxconcat-sess ${string} -analysis fc.isthmcseed.surf.rh -all-contrasts -o HCD_BANDA
+
+}
+function FSFastcpBANDAtoHCD()
+{
+	
+	#HCDs=( HCD0026119_V1_MR HCD0114419_V1_MR HCD0128935_V1_MR HCD0182941_V1_MR HCD0504735_V1_MR HCD0514738_V1_MR HCD0541539_V1_MR HCD0643345_V1_MR HCD0848060_V1_MR HCD1039032_V1_MR HCD1106728_V1_MR HCD1205326_V1_MR HCD1227134_V1_MR HCD1411935_V1_MR HCD1435646_V1_MR HCD1441540_V1_MR HCD1452848_V1_MR HCD1464451_V1_MR HCD1504437_V1_MR HCD1527045_V1_MR HCD1560851_V1_MR HCD1630139_V1_MR HCD1681257_V1_MR HCD1783366_V1_MR HCD1871969_V1_MR HCD1872971_V1_MR HCD1881164_V1_MR HCD1886477_V1_MR HCD1900142_V1_MR )
+
+	BANDAs=(BANDA002  BANDA050 BANDA003 BANDA058 BANDA004 BANDA061 BANDA008 BANDA071 BANDA009 BANDA078 BANDA010 BANDA087 BANDA011 BANDA105 BANDA012 BANDA107 BANDA013 BANDA117 BANDA014 BANDA122 BANDA016 BANDA124 BANDA018 BANDA128 BANDA033 BANDA136 BANDA043 BANDA140 BANDA046)
+
+	HCDdir=/space/erebus/1/users/HCPD/preprocessed_viv/FS_STRUCTURE/
+	BANDAdir=/space/erebus/1/users/data/preprocess/FS/MGH_HCP/
+
+
+	for s in ${BANDAs[@]}; 
+	do
+		echo ${s}
+		mkdir ${HCDdir}/${s}
+		#cp -R ${BANDAdir}/${s}/mri ${HCDdir}/${s}/
+		#cp -R ${BANDAdir}/${s}/surf ${HCDdir}/${s}/
+		#cp -R ${BANDAdir}/${s}/rest ${HCDdir}/${s}/
+		cp  ${BANDAdir}/${s}/subjectname ${HCDdir}/${s}/
+
+	done
+}
 function runBedpostx()
 {
 	s=$1
+	rm  ${PREPROCESS_DIR}/${s}/bedpostx/data_* 
+	rm -r  ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/* 
+
 	bedpostx ${PREPROCESS_DIR}/${s}/bedpostx -n 3 
+}
+function runBedpostx_mgh()
+{
+	file=$1
+	extraParams=$2
+	for si in `cat ${file}`;
+	do
+
+                subject=${si/^M/}                                                                                                     
+		echo ${PREPROCESS_DIR}
+		echo ${extraParams}
+		if [[  "${extraParams}" == "HCPD" ]]; then
+			s=${subject}_V1_MR
+		else
+			s=${subject}
+		fi
+		
+		echo   ${s}
+		running=`qstat | grep vsiless | wc -l`
+		while [[ "$running" -ge 800 ]];
+		do
+			echo $running running - sleeping...
+			sleep 10m 
+			running=`qstat | grep vsiless | wc -l`
+		done
+		rm  ${PREPROCESS_DIR}/${s}/bedpostx/data_* 
+		mv -r  ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/  ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX.old/  
+
+		bedpostx_mgh ${PREPROCESS_DIR}/${s}/bedpostx -n 3 
+			
+		sleep 10 
+	done
+}
+function T12diff()
+{
+	s=$1	
+
+	files=(dyads1_dispersion mean_fsumsamples mean_f1samples mean_f2samples mean_f3samples)
+	bbregister --s ${s} --mov ${PREPROCESS_DIR}/${s}/dMRI_AP_b0.nii.gz --reg ${PREPROCESS_DIR}/${s}/b02T1.lta  --o ${PREPROCESS_DIR}/${s}/b02T1.nii.gz --t2
+	mri_vol2vol --targ ${PREPROCESS_DIR}/${s}/dMRI_AP_b0.nii.gz --mov ${SUBJECTS_DIR}/${s}/mri/wmparc.mgz --o ${PREPROCESS_DIR}/${s}/wmparc2diff.nii.gz --lta-inv ${PREPROCESS_DIR}/${s}/b02T1.lta  --nearest 
+	for f in ${files[@]};
+	do
+ mri_copy_params ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/${f}.nii.gz ${PREPROCESS_DIR}/${s}/dMRI_AP_b0.nii.gz ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/${f}_u.nii.gz --size
+flirt -in ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/${f}_u.nii.gz ${PREPROCESS_DIR}/${s}/dMRI_AP_b0.nii.gz ${PREPROCESS_DIR}/${s}/bedpostx.bedpostX/${f}_u.nii.gz
+	done
 }
 <<permissions
 chgrp -R fiber  ${SUBJECTS_DIR}/preprocess/${s}

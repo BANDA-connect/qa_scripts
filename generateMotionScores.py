@@ -79,7 +79,8 @@ def vNavRead():
 	#subjects = ["BANDA004","BANDA005","BANDA006","BANDA007","BANDA008","BANDA009","BANDA010","BANDA011","BANDA012","BANDA013", "BANDA014", "BANDA015"]
 	#subjects = ["BANDA092","BANDA093","BANDA094","BANDA095","BANDA096","BANDA097","BANDA098","BANDA099", "BANDA100","BANDA101","BANDA102","BANDA103","BANDA104","BANDA105","BANDA106","BANDA107","BANDA108","BANDA109", "BANDA110","BANDA111","BANDA112","BANDA113","BANDA114","BANDA115","BANDA116","BANDA117","BANDA118","BANDA119"]
 	#,"BANDA088","BANDA089","BANDA090","BANDA091",]
-	subjects = ["BANDA138","BANDA139","BANDA140"]
+	#subjects = ["BANDA138","BANDA139","BANDA140"]
+	subjects = ["BANDA091"] #,"BANDA139","BANDA140"]
 	#["BANDA126","BANDA127","BANDA128","BANDA129","BANDA130","BANDA132","BANDA133","BANDA135","BANDA136","BANDA137","BANDA138","BANDA139","BANDA140"]
 
 	#["BANDA083","BANDA084","BANDA085","BANDA086","BANDA087"]
@@ -168,11 +169,10 @@ def getValues(inFile, xColumn,lineIndex, acq_time,ref, toMillimeters=None):
 			if linei >= lineIndex[0] and linei <lineIndex[len(lineIndex)-1] :
 
 				values =  line.split()
-				if len(prevValues )>5:
-					t=0
+				if linei == lineIndex[iind]:
 					tra_i = [0,0,0]
-					for i in range(xColumn, xColumn+3):
-						if linei == lineIndex[iind]:
+					if len(prevValues )>5:
+						for i in range(xColumn, xColumn+3):
 							if toMillimeters is None:
 								tra_i[i-xColumn] = math.fabs(float(values[i])-float(prevValues[i]))
 							else:
@@ -180,16 +180,16 @@ def getValues(inFile, xColumn,lineIndex, acq_time,ref, toMillimeters=None):
 								#tra_i[i-xColumn] = math.fabs(float(toMillimeters(math.fabs(float(values[i])-float(prevValues[i])))))
 
 							tra[i-xColumn]+= tra_i[i-xColumn]
-					all_tra.append(tra_i) 		
-					volumes +=1
+						all_tra.append(tra_i) 		
+						volumes +=1
+					iind+=1
 				if linei==ref or ref<0:
 					prevValues = values
 				if linei==lineIndex[0]:
 					for i in range(xColumn, xColumn+3):
 						absol[i-xColumn]= float(values[i])
 						#absol[i-xColumn]= tra_i[i-xColumn])
-				iind+=1
-			if len(lineIndex) == iind:
+			if lineIndex[-1] <= iind:
 				break
 			linei+=1
 	return (tra, volumes*acq_time, np.array(absol), np.array(all_tra))
@@ -206,6 +206,7 @@ def getTranslation(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, line
 
 
 	if avg:
+		print("avg tra")
 		return math.sqrt(sum(res**2)) #/tra[1]
 	else:	#this only works for within
 		return tra
@@ -238,16 +239,17 @@ def getRotationMillimeters(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=No
 	else:
 		res= np.array(rot[0])/rot[1]
 	if avg:
+		print("avg")
 		return math.sqrt(sum(res**2)) #/tra[1]
 	else: #this only works for within 
 		return rot
 
 def getFD(inFile, xColumn,lineIndex,acq_time,ref=-1, inFile2=None, lineIndex2=None, avg=False):
-	rot = getRotationMillimeters(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[2]
-	trans = getTranslation(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[2]
+	rot = getRotationMillimeters(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[3]
+	trans = getTranslation(inFile, xColumn, lineIndex, acq_time, ref, avg=False)[3]
 	if not inFile2 ==None :
-		rot2 = getRotationMillimeters(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[2]
-		trans2 = getTranslation(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[2]
+		rot2 = getRotationMillimeters(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[3]
+		trans2 = getTranslation(inFile2, xColumn, lineIndex2, acq_time, ref, avg=False)[3]
 
 		return radiansToMillimeters(sum(np.absolute(rot-rot2)))+sum(np.absolute(trans-trans2))
 
@@ -286,6 +288,12 @@ def getFileData(fileN):
 	if "dMRI" in fileN:
 		column =0
 		acq_time=3.230
+	elif "T1" in fileN:
+		column=3
+		acq_time=2.400
+	elif "T2" in fileN:
+		column=3
+		acq_time=3.200
 	else:
 		column =3
 		acq_time=.8
@@ -342,12 +350,14 @@ def plotWithinScanMotion():
 							if f != None :
 									print (name)
 									if "T1" == name:
-											ind = readVNavsScoreFiles(s, "T1")
+										ind = readVNavsScoreFiles(s, "T1")
+										#print(np.sort(ind)	)
 									elif "T2" == name:
-											ind = readVNavsScoreFiles(s, "T2")
-											#print(s, ind)
+										ind = readVNavsScoreFiles(s, "T2")
+										#print(np.sort(ind))
 									else:
-											ind = range(index[0], index[1])
+										#print("hola")
+										ind = range(index[0], index[1])
 
 									t=  m(f,column,np.sort(ind),acq_time)
 									#axarr[i,j].plot(subjects.index(s)+1, t, "o",c='C'+str(s_index%10))
@@ -381,14 +391,14 @@ def plotWithinScanMotion():
 
 					axarr[i,j].legend(handles=[control_patch,anxious_patch,depressed_patch])
 			#fg.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_within_scan_patvscontrol"+m,dpi=199)
-			#plt.show()
+	plt.show()
 
 
 def plotBetweenScanMotion():
 	#output=csv.writer(open('/space/erebus/1/users/data/scores/motion_between_scan_output.csv','w+'))
 	#output.writerow(['subject','rot_trans','scan_type','score'])
 
-	output=csv.writer(open('/space/erebus/1/users/data/scores/motion_between_scan_FD_output_140.csv','w+'))
+	output=csv.writer(open('/space/erebus/1/users/data/scores/_motion_between_scan_FD_output_140.csv','w+'))
 	output.writerow(['subject','rot_trans','scan_type','score'])
 
 	scans.append("T1 all vnavs - no reacq")
@@ -528,11 +538,13 @@ studies = {'Diffusion1': 'dMRI_topup_eddy.nii.gz.eddy_parameters','Diffusion2': 
 
 scans=['Diffusion1','Diffusion2','Diffusion3','Diffusion4','Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1',
 'T2']
+#scans=['T1', 'T2']
 
 diffusion=[ [0,98], [98,196],[196,295],[295,394]]
 
 metric = [getFramewiseThreashold, getFD,  getTranslation, getRotation] #, getFD] #, getTranslationAbsolute, getRotationAbsolute]
-metric_label=["FD (mm/s)","Translation (mm/s)" , "Rotation ($\degree/s$)", "Absolute translation per second", "Absolute rotation per second"]
+#metric = [ getTranslation, getRotation] #, getFD] #, getTranslationAbsolute, getRotationAbsolute]
+metric_label=["FDT","FD","Rotation ($\degree/s$)", "Absolute translation per second", "Absolute rotation per second",]
 
 pairsOfStudies = {'Diffusion1':'Diffusion2','Diffusion2':'Diffusion3','Diffusion3':'Diffusion4',
 'Rest1':'Rest2','Rest2':'Rest3','Rest3':'Rest4','Gambling1':'Gambling2','FaceMatching1':'FaceMatching2','Conflict1':'Conflict2','Conflict2':'Conflict3', 'Conflict3':'Conflict4'}

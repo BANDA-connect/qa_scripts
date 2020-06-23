@@ -1,0 +1,272 @@
+
+function copy()
+{
+
+	subject=$1
+	input=/space/erebus/1/users/HCPD/HCPDUnprocessed/
+	output=/space/erebus/1/users/HCPD/preprocessed_viv/
+	mkdir -p ${output}/${subject}
+	#copy diffusion
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_AP.nii.gz ${output}/${subject}/dMRI_AP1.nii.gz 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_AP.bval ${output}/${subject}/dMRI_AP1.bvals 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_AP.bvec ${output}/${subject}/dMRI_AP1.bvecs
+
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_AP.nii.gz ${output}/${subject}/dMRI_AP2.nii.gz 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_AP.bval ${output}/${subject}/dMRI_AP2.bvals 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_AP.bvec ${output}/${subject}/dMRI_AP2.bvecs
+
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_PA.nii.gz ${output}/${subject}/dMRI_PA1.nii.gz 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_PA.bval ${output}/${subject}/dMRI_PA1.bvals 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir98_PA.bvec ${output}/${subject}/dMRI_PA1.bvecs
+
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_PA.nii.gz ${output}/${subject}/dMRI_PA2.nii.gz 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_PA.bval ${output}/${subject}/dMRI_PA2.bvals 
+	cp ${input}/${subject}/unprocessed/Diffusion/${subject}_dMRI_dir99_PA.bvec ${output}/${subject}/dMRI_PA2.bvecs
+
+	#resting state
+	cp ${input}/${subject}/unprocessed/rfMRI_REST1_AP/${subject}_rfMRI_REST1_AP.nii.gz ${output}/${subject}/fMRI_rest1_AP.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST1_AP/${subject}_SpinEchoFieldMap1_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_1.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST1_AP/${subject}_SpinEchoFieldMap1_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_1.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST1_PA/${subject}_rfMRI_REST1_PA.nii.gz  ${output}/${subject}/fMRI_rest2_PA.nii.gz
+
+	cp ${input}/${subject}/unprocessed/rfMRI_REST2_AP/${subject}_rfMRI_REST2_AP.nii.gz ${output}/${subject}/fMRI_rest3_AP.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST2_AP/${subject}_SpinEchoFieldMap3_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_2.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST2_AP/${subject}_SpinEchoFieldMap3_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_2.nii.gz
+	cp ${input}/${subject}/unprocessed/rfMRI_REST2_PA/${subject}_rfMRI_REST2_PA.nii.gz  ${output}/${subject}/fMRI_rest4_PA.nii.gz
+
+	#structural
+	cp ${input}/${subject}/unprocessed/T1w_MPR_vNav_4e_RMS/${subject}_T1w_MPR_vNav_4e_RMS.nii.gz ${output}/${subject}/T1.nii.gz
+	cp ${input}/${subject}/unprocessed/T2w_SPC_vNav/${subject}_T2w_SPC_vNav.nii.gz ${output}/${subject}/T2.nii.gz
+
+
+	#gambling
+	cp ${input}/${subject}/unprocessed/tfMRI_GUESSING_AP/${subject}_tfMRI_GUESSING_AP.nii.gz 	${output}/${subject}/tfMRI_gambling1_AP.nii.gz
+	cp ${input}/${subject}/unprocessed/tfMRI_GUESSING_PA/${subject}_tfMRI_GUESSING_PA.nii.gz 	${output}/${subject}/tfMRI_gambling2_PA.nii.gz
+
+	#facematching
+	cp ${input}/${subject}/unprocessed/tfMRI_EMOTION_PA/${subject}_tfMRI_EMOTION_PA.nii.gz ${output}/${subject}/tfMRI_faceMatching1_PA.nii.gz
+
+	cp ${input}/${subject}/unprocessed/tfMRI_GUESSING_PA/${subject}_SpinEchoFieldMap2_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_3.nii.gz
+	cp ${input}/${subject}/unprocessed/tfMRI_GUESSING_PA/${subject}_SpinEchoFieldMap2_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_3.nii.gz
+
+}
+function copyDownloaded()
+{
+	cd /autofs/space/erebus_001/users/HCPD/HCPDUnprocessed/downloaded
+	output=/space/erebus/1/users/HCPD/preprocessed_viv/
+	for f in vsiless*/;
+	do
+		cd ${f}
+		for s in HCD*/;
+		do
+			cd ${s}
+			subject=${s/_A/_MR}
+			subject=${subject/_B/_MR}
+			
+
+			echo ${subject}
+	
+			mkdir -p ${output}/${subject}
+
+			cp 20/NIFTI/*_T1w_MPR_vNav_4e_RMS.nii.gz ${output}/${subject}/T1.nii.gz
+			cp 14/NIFTI/*_T1w_MPR_vNav_4e_RMS.nii.gz ${output}/${subject}/T1.nii.gz
+			cp 24/NIFTI/*_T1w_MPR_vNav_4e_RMS.nii.gz ${output}/${subject}/T1.nii.gz
+			
+			cp 24/NIFTI/*_T2w_SPC_vNav.nii.gz ${output}/${subject}/T2.nii.gz
+			cp 28/NIFTI/*_T2w_SPC_vNav.nii.gz ${output}/${subject}/T2.nii.gz
+	
+			cp */NIFTI/*_dMRI_dir98_AP.nii.gz ${output}/${subject}/dMRI_AP1.nii.gz
+			cp */NIFTI/*_dMRI_dir98_AP.bval ${output}/${subject}/dMRI_AP1.bvals
+			cp */NIFTI/*_dMRI_dir98_AP.bvec ${output}/${subject}/dMRI_AP1.bvecs
+	
+			cp */NIFTI/*_dMRI_dir99_AP.nii.gz ${output}/${subject}/dMRI_AP2.nii.gz
+			cp */NIFTI/*_dMRI_dir99_AP.bval ${output}/${subject}/dMRI_AP2.bvals
+			cp */NIFTI/*_dMRI_dir99_AP.bvec ${output}/${subject}/dMRI_AP2.bvecs
+
+			cp */NIFTI/*_dMRI_dir98_PA.nii.gz ${output}/${subject}/dMRI_PA1.nii.gz
+			cp */NIFTI/*_dMRI_dir98_PA.bval ${output}/${subject}/dMRI_PA1.bvals
+			cp */NIFTI/*_dMRI_dir98_PA.bvec ${output}/${subject}/dMRI_PA1.bvecs
+
+			cp */NIFTI/*_dMRI_dir99_PA.nii.gz ${output}/${subject}/dMRI_PA2.nii.gz
+			cp */NIFTI/*_dMRI_dir99_PA.bval ${output}/${subject}/dMRI_PA2.bvals
+			cp */NIFTI/*_dMRI_dir99_PA.bvec ${output}/${subject}/dMRI_PA2.bvecs
+
+
+			cp */NIFTI/*_V1_A_rfMRI_REST_AP.nii.gz	${output}/${subject}/fMRI_rest1_AP.nii.gz
+			cp */NIFTI/*_V1_A_rfMRI_REST_PA.nii.gz	${output}/${subject}/fMRI_rest2_PA.nii.gz
+			cp */NIFTI/*_V1_B_rfMRI_REST_AP.nii.gz	${output}/${subject}/fMRI_rest3_AP.nii.gz
+			cp */NIFTI/*_V1_B_rfMRI_REST_PA.nii.gz	${output}/${subject}/fMRI_rest4_PA.nii.gz
+
+			cp */NIFTI/*_tfMRI_GUESSING_AP.nii.gz ${output}/${subject}/tfMRI_gambling1_AP.nii.gz
+			cp */NIFTI/*_tfMRI_GUESSING_PA.nii.gz ${output}/${subject}/tfMRI_gambling2_PA.nii.gz
+
+			cp */NIFTI/*_tfMRI_EMOTION_PA.nii.gz ${output}/${subject}/tfMRI_faceMatching1_PA.nii.gz
+
+			cp 7/NIFTI/*_A_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_1.nii.gz
+			cp 8/NIFTI/*_A_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_1.nii.gz
+
+			cp 7/NIFTI/*_V1_B_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_2.nii.gz
+			cp 13/NIFTI/*_V1_B_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_2.nii.gz
+			cp 12/NIFTI/*_V1_B_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_2.nii.gz
+			cp 8/NIFTI/*_V1_B_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_2.nii.gz
+			cp 14/NIFTI/*_V1_B_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_2.nii.gz
+			cp 13/NIFTI/*_V1_B_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_2.nii.gz
+
+
+			cp 25/NIFTI/*_A_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_3.nii.gz
+			cp 27/NIFTI/*_A_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_3.nii.gz
+			cp 29/NIFTI/*_A_SpinEchoFieldMap_AP.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_AP_3.nii.gz
+			cp 26/NIFTI/*_A_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_3.nii.gz
+			cp 28/NIFTI/*_A_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_3.nii.gz
+			cp 30/NIFTI/*_A_SpinEchoFieldMap_PA.nii.gz ${output}/${subject}/fMRI_SpinEchoFieldMap_PA_3.nii.gz
+
+								
+			cd ..	
+			
+		done
+
+		cd ..
+
+	done
+}
+function copyDownloadedBs()
+{
+	cd /autofs/space/erebus_001/users/HCPD/HCPDUnprocessed/downloaded
+	output=/space/erebus/1/users/HCPD/preprocessed_viv/
+	for f in vsiless*/;
+	do
+		cd ${f}
+		for s in HCD*/;
+		do
+			cd ${s}
+			subject=${s/_A/_MR}
+			subject=${subject/_B/_MR}
+			
+
+			echo ${subject}
+	
+			cp */NIFTI/*_dMRI_dir98_AP.bval ${output}/${subject}/dMRI_AP1.bvals
+			cp */NIFTI/*_dMRI_dir98_AP.bvec ${output}/${subject}/dMRI_AP1.bvecs
+	
+			cp */NIFTI/*_dMRI_dir99_AP.bval ${output}/${subject}/dMRI_AP2.bvals
+			cp */NIFTI/*_dMRI_dir99_AP.bvec ${output}/${subject}/dMRI_AP2.bvecs
+
+			cp */NIFTI/*_dMRI_dir98_PA.bval ${output}/${subject}/dMRI_PA1.bvals
+			cp */NIFTI/*_dMRI_dir98_PA.bvec ${output}/${subject}/dMRI_PA1.bvecs
+
+			cp */NIFTI/*_dMRI_dir99_PA.bval ${output}/${subject}/dMRI_PA2.bvals
+			cp */NIFTI/*_dMRI_dir99_PA.bvec ${output}/${subject}/dMRI_PA2.bvecs
+			cd ..	
+			
+		done
+
+		cd ..
+
+	done
+}
+function movepreprocessed()
+{
+	file=$1
+	input=/space/erebus/1/users/HCPD/preprocessed_viv
+	output=/space/erebus/1/users/HCPD/preprocessed_viv2
+
+	inputFS=/autofs/space/erebus_001/users/HCPD/preprocessed_viv/FS_STRUCTURE
+	outputFS=/autofs/space/erebus_001/users/HCPD/preprocessed_viv/FS_STRUCTURE2
+	mkdir ${output}
+	mkdir ${outputFS}
+	for s in `cat ${file}`;
+	do
+                subject=${s/^M/}_V1_MR 
+		mv ${input}/${subject} ${output}/${subject}	
+		mv ${inputFS}/${subject} ${outputFS}/${subject}	
+	
+	done
+}
+function moveUnpreprocessed()
+{
+	file=$1
+	input=/space/erebus/1/users/HCPD/HCPDUnprocessed
+	output=/space/erebus/1/users/HCPD/unpreprocessed
+	for s in `cat ${file}`;
+	do
+                subject=${s/^M/}_V1_MR 
+		mv ${input}/${subject} ${output}/${subject}	
+	done
+}
+function copyFunctional()
+{
+	file=$1
+	output=/space/erebus/1/users/HCPD/preprocessed_viv/
+	for s in `cat ${file}`;
+	do
+
+                subject=${s/^M/}_V1_MR                                                                                                     
+		echo   ${subject} > ${output}/FS_STRUCTURE/${subject}/subjectname
+		#mkdir -p ${output}/FS_STRUCTURE/${subject}/rest/001/	
+		#mkdir -p ${output}/FS_STRUCTURE/${subject}/rest/002/	
+		#cp ${output}/${subject}/fMRI_rest1_AP_topup.nii.gz  ${output}/FS_STRUCTURE/${subject}/rest/001/f.nii.gz
+		#cp ${output}/${subject}/fMRI_rest2_PA_topup.nii.gz  ${output}/FS_STRUCTURE/${subject}/rest/002/f.nii.gz
+	done
+}
+function prepareBedpostx()
+{
+	file=$1
+	output=/space/erebus/1/users/HCPD/preprocessed_viv/
+	for s in `cat ${file}`;
+	do
+
+                subject=${s/^M/}_V1_MR
+		echo   ${s} ${subject}
+		mkdir -p ${output}/${subject}/bedpostxr/
+		fdt_rotate_bvecs ${output}/${subject}/bvecs ${output}/${subject}/bvecs_rotated /space/erebus_001/users/HCPD/preprocessed_viv/HCD0026119_V1_MR/dMRI_topup_eddy.nii.gz.eddy_parameters
+		cp ${output}/${subject}/bvecs_rotated  ${output}/${subject}/bedpostxr/bvecs
+		cp ${output}/${subject}/dMRI_topup_eddy.nii.gz ${output}/${subject}/bedpostxr/data.nii.gz
+		cp ${output}/${subject}/bvals ${output}/${subject}/bedpostxr/
+		cp ${output}/${subject}/dMRI_brain_mask.nii.gz ${output}/${subject}/bedpostxr/nodif_brain_mask.nii.gz
+	done
+}
+
+function copyFunctionalBANDA()
+{
+	file=$1
+	output=/space/erebus/1/users/data/preprocess/
+	for s in `cat ${file}`;
+	do
+
+                subject=${s/^M/}                                                                                                     
+		echo   ${s}
+		echo   ${subject} > ${output}/FS/MGH_HCP/${subject}/subjectname
+		#mkdir -p ${output}/FS/MGH_HCP/${subject}/rest/001/	
+		#mkdir -p ${output}/FS/MGH_HCP/${subject}/rest/002/	
+		#cp ${output}/${subject}/fMRI_rest1_AP_topup.nii.gz  ${output}/FS/MGH_HCP/${subject}/rest/001/f.nii.gz
+		#cp ${output}/${subject}/fMRI_rest2_PA_topup.nii.gz  ${output}/FS/MGH_HCP/${subject}/rest/002/f.nii.gz
+	done
+}
+function prepareBedpostxBANDA()
+{
+	file=$1
+	output=/space/erebus/1/users/data/preprocess/
+	for s in `cat ${file}`;
+	do
+
+                subject=${s/^M/}                                                                                                     
+		echo   ${s} ${subject}
+		mkdir -p ${output}/${subject}/bedpostx/
+			
+		cp ${output}/${subject}/dMRI_topup_eddy.nii.gz ${output}/${subject}/bedpostx/data.nii.gz
+		cp ${output}/${subject}/bv* ${output}/${subject}/bedpostx/
+		cp ${output}/${subject}/dMRI_brain_mask.nii.gz ${output}/${subject}/bedpostx/nodif_brain_mask.nii.gz
+	done
+}
+
+function all()
+{
+	cd /space/erebus/1/users/HCPD/HCPDUnprocessed/
+	for s in */;
+	do
+		$0 $1 ${s///}
+	done
+
+}
+
+$@

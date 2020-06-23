@@ -27,7 +27,7 @@ import matplotlib.patches as mpatches
 import csv
 from nipy.modalities.fmri.glm import GeneralLinearModel
 
-outliers=["BANDA051","BANDA104","BANDA131","BANDA134","BANDA129","BANDA137"]
+outliers=["BANDA091","BANDA051","BANDA131","BANDA134"]
 output="/space/erebus/1/users/data/scores/new2"
 
 matplotlib.rcParams.update({'font.size': 18})
@@ -67,22 +67,26 @@ def getValues(inFile, xColumn,lineIndex, acq_time,ref):
 	iind=0
 	with open(inFile) as motionFile:
 		for line in motionFile:
+			print(linei,iind,lineIndex[iind])
+
 			if linei >= lineIndex[0] and linei <lineIndex[len(lineIndex)-1] :
 
 				values =  line.split()
 				if len(prevValues )>5:
 					t=0
-					for i in range(xColumn, xColumn+3):
-						if linei == lineIndex[iind]:
+					if linei == lineIndex[iind]:
+						for i in range(xColumn, xColumn+3):
 							tra[i-xColumn] += math.fabs(float(values[i])-float(prevValues[i]))
-
-					volumes +=1
+						volumes +=1
+						iind+=1
+						
 				if linei==ref or ref<0:
 					prevValues = values
 				if linei==lineIndex[0]:
+					iind+=1
 					for i in range(xColumn, xColumn+3):
 						absol[i-xColumn]= float(values[i])
-				iind+=1
+
 			if len(lineIndex) == iind:
 				break
 			linei+=1
@@ -148,7 +152,7 @@ def motionWithin_measures():
 	'tfMRI_faceMatching2_PA_motion.nii.gz.par','Conflict1':'tfMRI_conflict1_AP_motion.nii.gz.par','Conflict2':'tfMRI_conflict2_PA_motion.nii.gz.par','Conflict3':'tfMRI_conflict3_AP_motion.nii.gz.par',
 	'Conflict4':'tfMRI_conflict4_PA_motion.nii.gz.par', 'T1':'motion/T1_motion.nii.gz.par','T2':'motion/T2_motion.nii.gz.par'}
 
-	scans=['Diffusion1','Diffusion2','Diffusion3','Diffusion4'] #,'Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1','T2']
+	scans=['T1'] #'Diffusion1','Diffusion2','Diffusion3','Diffusion4'] #,'Rest1','Rest2','Rest3','Rest4','Gambling1','Gambling2','FaceMatching1','FaceMatching2','Conflict1','Conflict2','Conflict3','Conflict4','T1','T2']
 	#scans.append("T1 all vnavs - no reacq")
 	#scans.append("T2 all vnavs - no reacq")
 	#scans=['T2']
@@ -162,7 +166,7 @@ def motionWithin_measures():
 
 	subjects, sex, scores = utils.loadBANDA140(outliers)
 
-	motionWithin_output=csv.writer(open('/space/erebus/1/users/data/scores/new2/motionWithin_avg_output_rjj020419.csv','w+'))
+	motionWithin_output=csv.writer(open('/space/erebus/1/users/data/scores/new2/test_rjj091219.csv','w+'))
 	motionWithin_output.writerow(['subject','rot_trans','avg_score','questionnaire','questionnaire_score'])
 
 	for key, score in scores.items():
@@ -194,6 +198,7 @@ def motionWithin_measures():
 			y_values = []
 			#for s in subjects:
 			for s_index,s in enumerate(subjects):
+				print(s)
 				t_accumulate = 0
 
 				for name in scans:
@@ -254,6 +259,7 @@ def motionWithin_measures():
 
 				x_values.append(float(score[s_index]))
 				y_values.append(avg_t)
+
 			#regression lines
 			(sl,b) = polyfit(x_values,y_values,1)
 			yp = polyval([sl,b],x_values)
@@ -297,7 +303,7 @@ def motionWithin_measures():
 					boxes2.set_ylabel("Average " + str(metric_label[metric.index(met)]))
 					boxes2.set_xlabel(str(key))
 		#f.savefig("/space/erebus/1/users/data/comparisonPlots_1_88/plots/motion_snr/motionWithin_avg_"+str(key),dpi=199)
-		f.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_Within_avg_"+str(key),dpi=199)
+		f.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/test_09122019_motion_Within_avg_"+str(key),dpi=199)
 
 	if str(str(key))=='Anhedonia':
 		boxes1.set_ylim(0,max(trans_box_max_list)+.25)
@@ -308,7 +314,7 @@ def motionWithin_measures():
 		#print(trans_boxplot_data[1])
 		boxes1.boxplot(trans_boxplot_data,labels=['no anhedonia','anhedonia'])
 		boxes2.boxplot(rotat_boxplot_data,labels=['no anhedonia','anhedonia'])
-		g.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
+		g.savefig("/autofs/space/erebus_001/users/data/scores/new2/plots/test_09112019_motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
 		#g.savefig("/space/erebus/1/users/vsiless/QA_plots//motion_Within_avg_Anhedonia"+"_boxplot",dpi=199)
 		print(anhedonia)
 		print(anhedonia_no)
@@ -603,6 +609,6 @@ def snr_measures(premade_output = None):
 
 	#plt.show()
 
-#motionWithin_measures()
+motionWithin_measures()
 #motionBetween_measures()
-snr_measures()
+#snr_measures()

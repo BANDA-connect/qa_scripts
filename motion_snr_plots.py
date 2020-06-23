@@ -603,6 +603,6 @@ def snr_measures(premade_output = None):
 
 	#plt.show()
 
-#motionWithin_measures()
+motionWithin_measures()
 #motionBetween_measures()
-snr_measures()
+#snr_measures()
